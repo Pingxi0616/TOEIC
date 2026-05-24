@@ -10,7 +10,8 @@
     "correctCount": 1,
     "familiarity": 2,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-07"
+    "nextReviewDate": "2026-05-07",
+    "favorite": false
   },
   {
     "word": "proficient",
@@ -19,11 +20,12 @@
     "phrase": "proficient in English",
     "phraseMeaning": "英語熟練",
     "example": "She is proficient in three languages.",
-    "wrongCount": 6,
+    "wrongCount": 8,
     "correctCount": 2,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "implement",
@@ -36,7 +38,8 @@
     "correctCount": 5,
     "familiarity": 2,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-07"
+    "nextReviewDate": "2026-05-07",
+    "favorite": false
   },
   {
     "word": "negotiate",
@@ -49,7 +52,8 @@
     "correctCount": 3,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "facilitate",
@@ -58,11 +62,12 @@
     "phrase": "facilitate communication",
     "phraseMeaning": "促進溝通",
     "example": "Technology can facilitate remote collaboration.",
-    "wrongCount": 2,
+    "wrongCount": 3,
     "correctCount": 5,
-    "familiarity": 3,
+    "familiarity": 2,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-09"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "allocate",
@@ -75,7 +80,8 @@
     "correctCount": 3,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "initiative",
@@ -88,7 +94,8 @@
     "correctCount": 0,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": true
   },
   {
     "word": "revenue",
@@ -101,7 +108,8 @@
     "correctCount": 3,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": true
   },
   {
     "word": "substantial",
@@ -111,10 +119,11 @@
     "phraseMeaning": "大幅增加",
     "example": "There was a substantial increase in sales this quarter.",
     "wrongCount": 3,
-    "correctCount": 4,
-    "familiarity": 3,
+    "correctCount": 5,
+    "familiarity": 4,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-12",
+    "favorite": true
   },
   {
     "word": "collaborate",
@@ -127,7 +136,8 @@
     "correctCount": 7,
     "familiarity": 4,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": true
   },
   {
     "word": "mandatory",
@@ -140,7 +150,8 @@
     "correctCount": 2,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "comprehensive",
@@ -153,7 +164,8 @@
     "correctCount": 2,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "deadline",
@@ -166,7 +178,8 @@
     "correctCount": 7,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "reluctant",
@@ -175,11 +188,12 @@
     "phrase": "be reluctant to",
     "phraseMeaning": "不願意做某事",
     "example": "He was reluctant to accept the offer.",
-    "wrongCount": 3,
+    "wrongCount": 4,
     "correctCount": 2,
     "familiarity": 1,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-06"
+    "nextReviewDate": "2026-05-06",
+    "favorite": false
   },
   {
     "word": "aggressive",
@@ -189,9 +203,10 @@
     "phraseMeaning": "積極的行銷策略",
     "example": "The company adopted an aggressive expansion strategy.",
     "wrongCount": 4,
-    "correctCount": 3,
-    "familiarity": 2,
+    "correctCount": 4,
+    "familiarity": 3,
     "lastReviewDate": "2026-05-05",
-    "nextReviewDate": "2026-05-07"
+    "nextReviewDate": "2026-05-09",
+    "favorite": false
   }
 ]

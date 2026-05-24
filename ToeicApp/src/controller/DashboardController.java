@@ -4,14 +4,16 @@ import manager.FileManager;
 import manager.QuizManager;
 import manager.ReviewManager;
 import model.Vocabulary;
+import model.VocabCollection;
 
 import java.util.List;
 
 public class DashboardController {
 
-    private List<Vocabulary> vocabList;
-    private QuizManager quizManager;
-    private ReviewManager reviewManager;
+    private List<Vocabulary>      vocabList;
+    private QuizManager           quizManager;
+    private ReviewManager         reviewManager;
+    private List<VocabCollection> collections;
 
     public DashboardController() {
         reload();
@@ -21,10 +23,15 @@ public class DashboardController {
         vocabList     = FileManager.loadVocabulary();
         quizManager   = new QuizManager(vocabList);
         reviewManager = new ReviewManager(vocabList);
+        collections   = FileManager.loadCollections();
     }
 
     public void save() {
         FileManager.saveVocabulary(vocabList);
+    }
+
+    public void saveCollections() {
+        FileManager.saveCollections(collections);
     }
 
     // ── 資料存取 ──────────────────────────────────────────────
@@ -44,6 +51,36 @@ public class DashboardController {
 
     public List<Vocabulary> getTodayWords()    { return reviewManager.getTodayReviewWords(); }
     public List<Vocabulary> getWrongWords()    { return reviewManager.getWrongWords(); }
+
+    public List<Vocabulary> getHistoryWords() {
+        return vocabList.stream()
+                .filter(v -> v.getCorrectCount() > 0 || v.getWrongCount() > 0)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public List<Vocabulary> getFavoriteWords() {
+        return vocabList.stream()
+                .filter(Vocabulary::isFavorite)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    public void toggleFavorite(Vocabulary vocab, boolean favorite) {
+        vocab.setFavorite(favorite);
+        save();
+    }
+
+    // ── Collection 管理 ───────────────────────────────────────
+    public List<VocabCollection> getCollections() { return collections; }
+
+    public void addCollection(VocabCollection col) {
+        collections.add(col);
+        saveCollections();
+    }
+
+    public void removeCollection(VocabCollection col) {
+        collections.remove(col);
+        saveCollections();
+    }
 
     /** 答題後更新並自動存檔 */
     public void submitAnswer(Vocabulary vocab, boolean correct) {

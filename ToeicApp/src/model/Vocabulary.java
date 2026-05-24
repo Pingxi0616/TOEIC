@@ -12,6 +12,7 @@ public class Vocabulary {
     private int familiarity;
     private String lastReviewDate;
     private String nextReviewDate;
+    private boolean favorite;
 
     public Vocabulary() {}
 
@@ -38,6 +39,7 @@ public class Vocabulary {
     public int    getFamiliarity()    { return familiarity; }
     public String getLastReviewDate() { return lastReviewDate; }
     public String getNextReviewDate() { return nextReviewDate; }
+    public boolean isFavorite()       { return favorite; }
 
     public void setWord(String v)            { this.word = v; }
     public void setMeaning(String v)         { this.meaning = v; }
@@ -50,6 +52,7 @@ public class Vocabulary {
     public void setFamiliarity(int v)        { this.familiarity = v; }
     public void setLastReviewDate(String v)  { this.lastReviewDate = v; }
     public void setNextReviewDate(String v)  { this.nextReviewDate = v; }
+    public void setFavorite(boolean v)       { this.favorite = v; }
 
     public String getFamiliarityStars() {
         return "★".repeat(familiarity) + "☆".repeat(5 - familiarity);

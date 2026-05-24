@@ -6,27 +6,34 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 
-/**
- * 主視窗：左側欄 + 右側 CardLayout 切換畫面
- */
 public class ToeicApp extends JFrame {
 
     private final DashboardController ctrl = new DashboardController();
 
-    // 各功能面板
-    private DashboardPanel   dashPanel;
-    private VocabQuizPanel   vocabPanel;
-    private FillBlankPanel   fillPanel;
-    private CustomQuizPanel  customPanel;
+    private DashboardPanel    dashPanel;
+    private VocabQuizPanel    vocabPanel;
+    private FillBlankPanel    fillPanel;
+    private CustomQuizPanel   customPanel;
     private VocabManagerPanel managerPanel;
+    private FavoriteWordsPanel favoritePanel;
+    private WrongWordsPanel   wrongPanel;
+    private CollectionPanel   collectionPanel;
+    private HistoryPanel      historyPanel;
 
     private JPanel cardArea;
     private CardLayout cardLayout;
 
-    // 側欄按鈕
     private JButton[] navBtns;
-    private static final String[] PAGE_KEYS  = {"dashboard","vocab","fill","custom","manager"};
-    private static final String[] PAGE_NAMES = {"總覽","單字片語測驗","句子填空測驗","客製化出題","單字庫管理"};
+
+    private static final int SIDEBAR_COUNT = 5;
+
+    private static final String[] PAGE_KEYS = {
+        "dashboard", "vocab", "fill", "custom", "manager",
+        "favorite",  "wrong", "collection", "history"
+    };
+    private static final String[] SIDEBAR_NAMES = {
+        "主頁", "單字片語測驗", "句子填空測驗", "客製化出題", "單字庫管理"
+    };
 
     public ToeicApp() {
         setTitle("TOEIC 練習系統");
@@ -43,21 +50,19 @@ public class ToeicApp extends JFrame {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(AppColors.BG_MAIN);
 
-        root.add(buildSidebar(), BorderLayout.WEST);
+        root.add(buildSidebar(),  BorderLayout.WEST);
         root.add(buildCardArea(), BorderLayout.CENTER);
 
         setContentPane(root);
-        selectPage(0); // 預設顯示總覽
+        selectPage(0);
     }
 
-    // ── 左側欄 ───────────────────────────────────────────────
     private JPanel buildSidebar() {
         JPanel sb = new JPanel(new BorderLayout());
         sb.setPreferredSize(new Dimension(220, 0));
         sb.setBackground(AppColors.BG_SIDEBAR);
         sb.setBorder(new MatteBorder(0, 0, 0, 1, new Color(0xB8A888)));
 
-        // Logo 區
         JPanel logo = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 18));
         logo.setBackground(AppColors.BG_SIDEBAR);
         logo.setBorder(new MatteBorder(0, 0, 1, 0, new Color(0xB8A888)));
@@ -71,20 +76,19 @@ public class ToeicApp extends JFrame {
         logo.add(square);
         logo.add(appName);
 
-        // 導覽按鈕
         JPanel nav = new JPanel();
         nav.setLayout(new BoxLayout(nav, BoxLayout.Y_AXIS));
         nav.setBackground(AppColors.BG_SIDEBAR);
         nav.setBorder(new EmptyBorder(10, 8, 10, 8));
 
-        navBtns = new JButton[PAGE_NAMES.length];
-        for (int i = 0; i < PAGE_NAMES.length; i++) {
+        navBtns = new JButton[SIDEBAR_COUNT];
+        for (int i = 0; i < SIDEBAR_COUNT; i++) {
             final int idx = i;
-            navBtns[i] = buildNavBtn(PAGE_NAMES[i]);
+            navBtns[i] = buildSidebarBtn(SIDEBAR_NAMES[i]);
             navBtns[i].addActionListener(e -> selectPage(idx));
             nav.add(navBtns[i]);
             nav.add(Box.createVerticalStrut(2));
-            if (i == 3) nav.add(buildSeparator());
+            if (i == 0 || i == 4) nav.add(buildSeparator());
         }
 
         sb.add(logo, BorderLayout.NORTH);
@@ -92,7 +96,7 @@ public class ToeicApp extends JFrame {
         return sb;
     }
 
-    private JButton buildNavBtn(String text) {
+    private JButton buildSidebarBtn(String text) {
         JButton b = new JButton(text);
         b.setFont(AppColors.FONT_BODY);
         b.setHorizontalAlignment(SwingConstants.LEFT);
@@ -115,25 +119,39 @@ public class ToeicApp extends JFrame {
         return sep;
     }
 
-    // ── 右側 CardLayout ───────────────────────────────────────
     private JPanel buildCardArea() {
         cardLayout = new CardLayout();
         cardArea   = new JPanel(cardLayout);
         cardArea.setBackground(AppColors.BG_MAIN);
 
-        dashPanel    = new DashboardPanel(ctrl);
-        vocabPanel   = new VocabQuizPanel(ctrl);
-        fillPanel    = new FillBlankPanel(ctrl);
-        customPanel  = new CustomQuizPanel(ctrl);
-        managerPanel = new VocabManagerPanel(ctrl);
+        dashPanel = new DashboardPanel(ctrl,
+            () -> selectPage(5),   // onFavorite
+            () -> selectPage(6),   // onWrong
+            () -> selectPage(7),   // onCollection
+            () -> selectPage(8)    // onHistory
+        );
 
-        cardArea.add(dashPanel,    PAGE_KEYS[0]);
-        cardArea.add(vocabPanel,   PAGE_KEYS[1]);
-        cardArea.add(fillPanel,    PAGE_KEYS[2]);
-        cardArea.add(customPanel,  PAGE_KEYS[3]);
-        cardArea.add(managerPanel, PAGE_KEYS[4]);
+        vocabPanel      = new VocabQuizPanel(ctrl);
+        fillPanel       = new FillBlankPanel(ctrl);
+        customPanel     = new CustomQuizPanel(ctrl);
+        managerPanel    = new VocabManagerPanel(ctrl);
 
-        // 客製化出題「開始」後切換到測驗頁
+        Runnable backToHome = () -> selectPage(0);
+        favoritePanel   = new FavoriteWordsPanel(ctrl,  backToHome);
+        wrongPanel      = new WrongWordsPanel(ctrl,     backToHome);
+        collectionPanel = new CollectionPanel(ctrl,     backToHome);
+        historyPanel    = new HistoryPanel(ctrl,        backToHome);
+
+        cardArea.add(dashPanel,       PAGE_KEYS[0]);
+        cardArea.add(vocabPanel,      PAGE_KEYS[1]);
+        cardArea.add(fillPanel,       PAGE_KEYS[2]);
+        cardArea.add(customPanel,     PAGE_KEYS[3]);
+        cardArea.add(managerPanel,    PAGE_KEYS[4]);
+        cardArea.add(favoritePanel,   PAGE_KEYS[5]);
+        cardArea.add(wrongPanel,      PAGE_KEYS[6]);
+        cardArea.add(collectionPanel, PAGE_KEYS[7]);
+        cardArea.add(historyPanel,    PAGE_KEYS[8]);
+
         customPanel.addPropertyChangeListener("startCustomQuiz", evt -> {
             boolean prioritize = (boolean) evt.getNewValue();
             vocabPanel.startQuiz(prioritize);
@@ -145,7 +163,9 @@ public class ToeicApp extends JFrame {
 
     private void selectPage(int idx) {
         cardLayout.show(cardArea, PAGE_KEYS[idx]);
-        for (int i = 0; i < navBtns.length; i++) {
+
+        // Only update highlight for sidebar buttons (indices 0-4)
+        for (int i = 0; i < SIDEBAR_COUNT; i++) {
             boolean on = (i == idx);
             navBtns[i].setBackground(on ? AppColors.BG_SELECTED : AppColors.BG_SIDEBAR);
             navBtns[i].setForeground(on ? AppColors.TEXT_PRIMARY : AppColors.TEXT_SECONDARY);
@@ -154,8 +174,14 @@ public class ToeicApp extends JFrame {
                 : new CompoundBorder(new LineBorder(new Color(0, 0, 0, 0), 1, true), new EmptyBorder(8, 14, 8, 14))
             );
         }
-        // 切回總覽時刷新資料
-        if (idx == 0) dashPanel.refresh();
-        if (idx == 4) managerPanel.refresh();
+
+        switch (idx) {
+            case 0: dashPanel.refresh();       break;
+            case 4: managerPanel.refresh();    break;
+            case 5: favoritePanel.refresh();   break;
+            case 6: wrongPanel.refresh();      break;
+            case 7: collectionPanel.refresh(); break;
+            case 8: historyPanel.refresh();    break;
+        }
     }
 }
