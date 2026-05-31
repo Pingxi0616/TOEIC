@@ -3,6 +3,7 @@ package tools;
 import java.io.*;
 import java.net.*;
 import java.util.List;
+import java.util.Properties;
 import manager.FileManager;
 import model.Vocabulary;
 
@@ -19,17 +20,16 @@ import model.Vocabulary;
  */
 public class ExampleGenerator {
 
-    // ── 設定區（請修改這裡）────────────────────────────────────
-    private static final String API_KEY    = "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"; // 填入你的 Groq API Key
     private static final String API_URL    = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String MODEL      = "llama-3.1-8b-instant"; // 免費、速度快
-    private static final int    DELAY_MS   = 100;  // Groq 速度快，間隔可短一點
-    private static final int    SAVE_EVERY = 50;   // 每幾個成功後自動存檔
-    // ────────────────────────────────────────────────────────────
+    private static final String MODEL      = "llama-3.1-8b-instant";
+    private static final int    DELAY_MS   = 100;
+    private static final int    SAVE_EVERY = 50;
 
     public static void main(String[] args) throws Exception {
-        if (API_KEY == null || API_KEY.isBlank() || API_KEY.contains("XXXX")) {
-            System.err.println("❌ 請先在 ExampleGenerator.java 的 API_KEY 填入你的 OpenAI API Key！");
+        String API_KEY = loadApiKey();
+        if (API_KEY == null) {
+            System.err.println("❌ 找不到 API Key！");
+            System.err.println("   請在 config.properties 填入：groq.api.key=gsk_...");
             return;
         }
 
@@ -54,7 +54,7 @@ public class ExampleGenerator {
             System.out.printf("[%d/%d] %-20s ", i + 1, list.size(), v.getWord());
             System.out.flush();
 
-            String example = callOpenAI(v);
+            String example = callOpenAI(v, API_KEY);
             if (example != null && !example.isBlank()) {
                 v.setExample(example);
                 processed++;
@@ -82,8 +82,40 @@ public class ExampleGenerator {
         System.out.println("vocabulary.json 已更新。");
     }
 
-    // ── 呼叫 OpenAI Chat Completion API ─────────────────────────
-    private static String callOpenAI(Vocabulary v) {
+    // ── 讀取 config.properties 中的 API Key ──────────────────────
+    private static String loadApiKey() {
+        String[] candidates = { resolveBaseDir() + "config.properties", "config.properties" };
+        for (String path : candidates) {
+            File f = new File(path);
+            if (!f.exists()) continue;
+            Properties p = new Properties();
+            try (Reader r = new InputStreamReader(new FileInputStream(f), "UTF-8")) {
+                p.load(r);
+                String key = p.getProperty("groq.api.key", "").trim();
+                if (!key.isEmpty() && !key.startsWith("請填入")) return key;
+            } catch (IOException ignored) {}
+        }
+        return null;
+    }
+
+    private static String resolveBaseDir() {
+        try {
+            File clsDir = new File(ExampleGenerator.class.getProtectionDomain()
+                .getCodeSource().getLocation().toURI());
+            File dir = clsDir.isFile() ? clsDir.getParentFile() : clsDir;
+            for (int i = 0; i < 4; i++) {
+                if (new File(dir, "data/vocabulary.json").exists()) {
+                    return dir.getAbsolutePath().replace('\\', '/') + "/";
+                }
+                dir = dir.getParentFile();
+                if (dir == null) break;
+            }
+        } catch (Exception ignored) {}
+        return "";
+    }
+
+    // ── 呼叫 Groq Chat Completion API ───────────────────────────
+    private static String callOpenAI(Vocabulary v, String API_KEY) {
         try {
             String prompt = buildPrompt(v);
             String body = "{"
@@ -111,7 +143,7 @@ public class ExampleGenerator {
                 // Rate limit：等久一點再重試
                 System.out.print("[rate limit, 等待 5s] ");
                 Thread.sleep(5000);
-                return callOpenAI(v);
+                return callOpenAI(v, API_KEY);
             }
             if (code != 200) {
                 System.out.print("[HTTP " + code + "] ");
