@@ -34,7 +34,6 @@ public class FillBlankPanel extends JPanel {
     private JLabel  feedbackLabel;
     private JTextArea analysisArea;
     private JButton nextBtn;
-    private JToggleButton vocabModeBtn, grammarModeBtn;
 
     public FillBlankPanel(DashboardController ctrl) {
         this.ctrl = ctrl;
@@ -59,16 +58,10 @@ public class FillBlankPanel extends JPanel {
     }
 
     private void startFromSource(List<Vocabulary> words) {
-        // 優先使用有例句的單字；若不足則補充無例句的
-        List<Vocabulary> withEx = new ArrayList<>(), noEx = new ArrayList<>();
-        for (Vocabulary v : words) {
-            if (v.getExample() != null && !v.getExample().isEmpty()) withEx.add(v);
-            else noEx.add(v);
-        }
-        Collections.shuffle(withEx);
-        Collections.shuffle(noEx);
-        withEx.addAll(noEx);
-        quizList     = withEx.subList(0, Math.min(20, withEx.size()));
+        // 所有單字均可出填空題（無例句時自動生成例句模板）
+        List<Vocabulary> pool = new ArrayList<>(words);
+        Collections.shuffle(pool);
+        quizList     = new ArrayList<>(pool.subList(0, Math.min(20, pool.size())));
         currentIndex = 0;
         correctCount = 0;
         inner.show(innerArea, "quiz");
@@ -89,14 +82,9 @@ public class FillBlankPanel extends JPanel {
         title.setForeground(AppColors.TEXT_PRIMARY);
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         right.setOpaque(false);
-        ButtonGroup bg = new ButtonGroup();
-        vocabModeBtn   = toggleBtn("單字導向");
-        grammarModeBtn = toggleBtn("文法導向");
-        vocabModeBtn.setSelected(true);
-        bg.add(vocabModeBtn); bg.add(grammarModeBtn);
-        JButton backBtn = makeBtn("← 選擇來源", AppColors.BG_CARD, AppColors.TEXT_SECONDARY);
+        JButton backBtn = makeBtn("退出測驗", AppColors.BG_CARD, AppColors.TEXT_RED);
         backBtn.addActionListener(e -> showSelector());
-        right.add(vocabModeBtn); right.add(grammarModeBtn); right.add(backBtn);
+        right.add(backBtn);
         topBar.add(title, BorderLayout.WEST);
         topBar.add(right, BorderLayout.EAST);
 
@@ -221,12 +209,12 @@ public class FillBlankPanel extends JPanel {
             correctCount++;
             optBtns[idx].setBackground(new Color(0xC8E6C9));
             optBtns[idx].setForeground(new Color(0x1B5E20));
-            feedbackLabel.setText("✓ 正確！");
+            feedbackLabel.setText("正確！");
             feedbackLabel.setForeground(AppColors.TEXT_GREEN);
         } else {
             optBtns[idx].setBackground(new Color(0xFFCDD2));
             optBtns[idx].setForeground(new Color(0xB71C1C));
-            feedbackLabel.setText("✗ 正確答案：" + answer);
+            feedbackLabel.setText("正確答案：" + answer);
             feedbackLabel.setForeground(AppColors.TEXT_RED);
             for (JButton b : optBtns) if (b.getText().equals(answer)) { b.setBackground(new Color(0xC8E6C9)); b.setForeground(new Color(0x1B5E20)); }
         }
@@ -243,26 +231,8 @@ public class FillBlankPanel extends JPanel {
     private void nextQuestion() { currentIndex++; loadQuestion(); }
 
     private void showResult() {
-        int total = quizList == null ? 0 : Math.min(currentIndex, quizList.size());
-        JOptionPane.showMessageDialog(this,
-            String.format("測驗結束！\n答對：%d  答錯：%d\n正確率：%.0f%%",
-                correctCount, total-correctCount, total>0?(correctCount*100.0/total):0),
-            "填空測驗結果", JOptionPane.INFORMATION_MESSAGE);
-        showSelector();
-    }
-
-    private JToggleButton toggleBtn(String text) {
-        JToggleButton b = new JToggleButton(text);
-        b.setFont(AppColors.FONT_BTN);
-        b.setFocusPainted(false);
-        b.setBorder(new CompoundBorder(new LineBorder(AppColors.BORDER,1,true), new EmptyBorder(4,12,4,12)));
-        b.setBackground(AppColors.BG_CARD);
-        b.setForeground(AppColors.TEXT_SECONDARY);
-        b.addChangeListener(e -> {
-            b.setBackground(b.isSelected() ? AppColors.BTN_PRIMARY : AppColors.BG_CARD);
-            b.setForeground(b.isSelected() ? Color.WHITE : AppColors.TEXT_SECONDARY);
-        });
-        return b;
+        int total = quizList == null ? 0 : quizList.size();
+        QuizResultDialog.show(this, correctCount, total, "句子填空測驗", this::showSelector);
     }
 
     private JButton makeBtn(String text, Color bg, Color fg) {

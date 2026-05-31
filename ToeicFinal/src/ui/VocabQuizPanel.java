@@ -40,7 +40,7 @@ public class VocabQuizPanel extends JPanel {
     private JLabel  feedbackLabel;
     private JButton nextBtn, pronounceBtn;
     private JPanel  modeRow;
-    private JButton[] modeBtns = new JButton[3];
+    private JButton[] modeBtns = new JButton[2];
 
     public VocabQuizPanel(DashboardController ctrl) {
         this.ctrl = ctrl;
@@ -120,9 +120,9 @@ public class VocabQuizPanel extends JPanel {
 
         modeRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         modeRow.setOpaque(false);
-        String[] modeNames = {"英翻中","中翻英","片語"};
-        Mode[]   modeVals  = {Mode.EN_TO_CN, Mode.CN_TO_EN, Mode.PHRASE};
-        for (int i = 0; i < 3; i++) {
+        String[] modeNames = {"英翻中","中翻英"};
+        Mode[]   modeVals  = {Mode.EN_TO_CN, Mode.CN_TO_EN};
+        for (int i = 0; i < 2; i++) {
             final int fi = i;
             modeBtns[i] = new JButton(modeNames[i]);
             modeBtns[i].setFont(AppColors.FONT_BTN);
@@ -131,7 +131,7 @@ public class VocabQuizPanel extends JPanel {
             modeBtns[i].addActionListener(e -> { currentMode = modeVals[fi]; refreshModeBtns(); loadQuestion(); });
             modeRow.add(modeBtns[i]);
         }
-        JButton backBtn = makeBtn("← 選擇來源", AppColors.BG_CARD, AppColors.TEXT_SECONDARY);
+        JButton backBtn = makeBtn("退出測驗", AppColors.BG_CARD, AppColors.TEXT_RED);
         backBtn.addActionListener(e -> showSelector());
         modeRow.add(backBtn);
 
@@ -207,7 +207,7 @@ public class VocabQuizPanel extends JPanel {
         srInfo.setForeground(AppColors.TEXT_SECONDARY);
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
-        pronounceBtn = makeBtn("🔊 發音", AppColors.BG_CARD, AppColors.TEXT_PRIMARY);
+        pronounceBtn = makeBtn("發音", AppColors.BG_CARD, AppColors.TEXT_PRIMARY);
         pronounceBtn.addActionListener(e -> pronounce());
         nextBtn = makeBtn("下一題 →", AppColors.BTN_PRIMARY, Color.WHITE);
         nextBtn.setVisible(false);
@@ -270,12 +270,12 @@ public class VocabQuizPanel extends JPanel {
             correctCount++;
             optBtns[idx].setBackground(new Color(0xC8E6C9));
             optBtns[idx].setForeground(new Color(0x1B5E20));
-            feedbackLabel.setText("✓ 正確！  " + v.getWord() + "：" + v.getMeaning());
+            feedbackLabel.setText("正確！  " + v.getWord() + "：" + v.getMeaning());
             feedbackLabel.setForeground(AppColors.TEXT_GREEN);
         } else {
             optBtns[idx].setBackground(new Color(0xFFCDD2));
             optBtns[idx].setForeground(new Color(0xB71C1C));
-            feedbackLabel.setText("✗ 錯誤，正確答案：" + answer);
+            feedbackLabel.setText("錯誤，正確答案：" + answer);
             feedbackLabel.setForeground(AppColors.TEXT_RED);
             for (JButton b : optBtns) if (b.getText().equals(answer)) { b.setBackground(new Color(0xC8E6C9)); b.setForeground(new Color(0x1B5E20)); }
         }
@@ -287,13 +287,10 @@ public class VocabQuizPanel extends JPanel {
 
     private void showResult() {
         int total = quizList == null ? 0 : quizList.size();
-        JOptionPane.showMessageDialog(this,
-            String.format("測驗結束！\n答對：%d  答錯：%d\n正確率：%.0f%%",
-                correctCount, total-correctCount,
-                total>0 ? (correctCount*100.0/total) : 0),
-            "測驗結果", JOptionPane.INFORMATION_MESSAGE);
-        if (customMode && onFinishCallback != null) onFinishCallback.run();
-        else showSelector();
+        QuizResultDialog.show(this, correctCount, total, "單字片語測驗", () -> {
+            if (customMode && onFinishCallback != null) onFinishCallback.run();
+            else showSelector();
+        });
     }
 
     private void pronounce() {
@@ -309,7 +306,7 @@ public class VocabQuizPanel extends JPanel {
     }
 
     private void refreshModeBtns() {
-        Mode[] vals = {Mode.EN_TO_CN, Mode.CN_TO_EN, Mode.PHRASE};
+        Mode[] vals = {Mode.EN_TO_CN, Mode.CN_TO_EN};
         for (int i = 0; i < modeBtns.length; i++) {
             boolean on = vals[i] == currentMode;
             modeBtns[i].setBackground(on ? AppColors.BTN_PRIMARY : AppColors.BG_CARD);

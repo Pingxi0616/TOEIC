@@ -1,17 +1,19 @@
 package ui;
 
 import controller.DashboardController;
-import model.Vocabulary;
-
-import javax.swing.*;
-import javax.swing.border.*;
 import java.awt.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import javax.swing.*;
+import javax.swing.border.*;
+import model.VocabCollection;
+import model.Vocabulary;
+import java.awt.Dialog;
 
 public class DashboardPanel extends JPanel {
 
@@ -23,13 +25,15 @@ public class DashboardPanel extends JPanel {
     private int     cardIndex   = 0;
     private boolean showMeaning = false;
     private JLabel  cardWordLabel, cardPosLabel, cardMeaningLabel, cardIndexLabel;
-    private JButton heartBtn, camBtn;
+    private JButton heartBtn, colBtn;
 
     // 計數
     private JLabel favCountLabel, wrongCountLabel, colCountLabel, historyCountLabel;
 
-    // 日期
+    // 日期 + 單字卡來源選擇器
     private JLabel dateLabel;
+    private JComboBox<String> sourceCombo;
+    private boolean updatingCombo = false;
 
     private static final Color WRONG_YELLOW = new Color(0xF9A825);
     private static final Color COL_TEAL     = new Color(0x2E7D6E);
@@ -58,11 +62,53 @@ public class DashboardPanel extends JPanel {
         JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(0, 0, 18, 0));
+
         dateLabel = new JLabel(formatDate(LocalDate.now()));
         dateLabel.setFont(AppColors.FONT_BODY);
         dateLabel.setForeground(AppColors.TEXT_SECONDARY);
         dateLabel.setToolTipText("日期已透過網路同步");
-        p.add(dateLabel, BorderLayout.EAST);
+
+        // 單字卡來源選擇器
+        sourceCombo = new JComboBox<>();
+        sourceCombo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI());
+        sourceCombo.setFont(AppColors.FONT_SMALL);
+        sourceCombo.setBackground(AppColors.BG_MAIN);
+        sourceCombo.setForeground(AppColors.TEXT_PRIMARY);
+        sourceCombo.setBorder(new EmptyBorder(2, 6, 2, 6));
+        sourceCombo.setFocusable(false);
+        sourceCombo.setToolTipText("選擇單字卡顯示的單字庫");
+        sourceCombo.setRenderer(new javax.swing.DefaultListCellRenderer() {
+            @Override
+            public java.awt.Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean isSelected, boolean cellHasFocus) {
+                JLabel lbl = (JLabel) super.getListCellRendererComponent(
+                        list, value, index, isSelected, cellHasFocus);
+                lbl.setFont(AppColors.FONT_SMALL);
+                lbl.setBorder(new EmptyBorder(5, 10, 5, 10));
+                if (isSelected) {
+                    lbl.setBackground(AppColors.BG_SIDEBAR);
+                    lbl.setForeground(AppColors.TEXT_PRIMARY);
+                } else {
+                    lbl.setBackground(AppColors.BG_MAIN);
+                    lbl.setForeground(AppColors.TEXT_PRIMARY);
+                }
+                return lbl;
+            }
+        });
+        sourceCombo.addActionListener(e -> { if (!updatingCombo) updateCardSource(); });
+
+        JLabel srcLbl = new JLabel("單字卡：");
+        srcLbl.setFont(AppColors.FONT_SMALL);
+        srcLbl.setForeground(AppColors.TEXT_SECONDARY);
+
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        right.setOpaque(false);
+        right.add(srcLbl);
+        right.add(sourceCombo);
+        right.add(dateLabel);
+
+        p.add(right, BorderLayout.EAST);
         return p;
     }
 
@@ -79,21 +125,21 @@ public class DashboardPanel extends JPanel {
     private JPanel buildNavCards() {
         JPanel row = new JPanel(new GridLayout(1, 4, 12, 0));
         row.setOpaque(false);
-        row.setPreferredSize(new Dimension(0, 110));
+        row.setPreferredSize(new Dimension(0, 140));
 
         favCountLabel     = countLabel("0");
         wrongCountLabel   = countLabel("0");
         colCountLabel     = countLabel("0");
         historyCountLabel = countLabel("0");
 
-        row.add(buildNavCard("♥","#C62828","Favorite 單字",  favCountLabel,    "已收藏",  AppColors.TEXT_RED,  onFavorite));
-        row.add(buildNavCard("✗","#E65100","錯誤單字區",     wrongCountLabel,  "已答錯",  new Color(0xE65100), onWrong));
-        row.add(buildNavCard("☰","#2E7D6E","Collection 群組", colCountLabel,   "個群組",  COL_TEAL,            onCollection));
-        row.add(buildNavCard("◷","#5C6BC0","History 已學",   historyCountLabel,"已練習",  HIST_INDIGO,         onHistory));
+        row.add(buildNavCard("♥", "Segoe UI Symbol", "Favorite 單字",   AppColors.TEXT_RED,  favCountLabel,    "已收藏", AppColors.TEXT_RED,  onFavorite));
+        row.add(buildNavCard("✗", "Segoe UI Symbol", "錯誤單字區",      new Color(0xE65100), wrongCountLabel,  "已答錯", new Color(0xE65100), onWrong));
+        row.add(buildNavCard("★", "Segoe UI Symbol", "Collection 群組", COL_TEAL,            colCountLabel,    "個群組", COL_TEAL,            onCollection));
+        row.add(buildNavCard("✓", "Segoe UI Symbol", "History 已學",    HIST_INDIGO,         historyCountLabel,"已練習", HIST_INDIGO,         onHistory));
         return row;
     }
 
-    private JPanel buildNavCard(String icon, String iconHex, String title,
+    private JPanel buildNavCard(String icon, String iconFont, String title, Color titleColor,
                                 JLabel cntLabel, String unit, Color cntColor, Runnable action) {
         JPanel card = new JPanel(new BorderLayout(0, 4));
         card.setBackground(AppColors.BG_CARD);
@@ -103,9 +149,21 @@ public class DashboardPanel extends JPanel {
         ));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        JLabel iconLbl = new JLabel(icon + "  " + title);
-        iconLbl.setFont(AppColors.FONT_HEAD);
-        iconLbl.setForeground(Color.decode(iconHex));
+        // 圖示（各 icon 使用最適合的字型）
+        JLabel iconLbl = new JLabel(icon);
+        iconLbl.setFont(new Font(iconFont, Font.PLAIN, 18));
+        iconLbl.setForeground(titleColor);
+
+        JLabel titleLbl = new JLabel(title);
+        titleLbl.setFont(new Font("Microsoft JhengHei", Font.BOLD, 19));
+        titleLbl.setForeground(titleColor);
+
+        JPanel titleRow = new JPanel();
+        titleRow.setLayout(new BoxLayout(titleRow, BoxLayout.X_AXIS));
+        titleRow.setOpaque(false);
+        titleRow.add(iconLbl);
+        titleRow.add(Box.createHorizontalStrut(5));
+        titleRow.add(titleLbl);
 
         cntLabel.setFont(new Font("Microsoft JhengHei", Font.BOLD, 26));
         cntLabel.setForeground(cntColor);
@@ -120,8 +178,8 @@ public class DashboardPanel extends JPanel {
         mid.add(cntLabel);
         mid.add(unitLbl);
 
-        card.add(iconLbl, BorderLayout.NORTH);
-        card.add(mid,     BorderLayout.CENTER);
+        card.add(titleRow, BorderLayout.NORTH);
+        card.add(mid,      BorderLayout.CENTER);
 
         card.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseClicked(java.awt.event.MouseEvent e) { action.run(); }
@@ -148,6 +206,14 @@ public class DashboardPanel extends JPanel {
         cardWordLabel = new JLabel("", SwingConstants.CENTER);
         cardWordLabel.setFont(new Font("Serif", Font.BOLD, 44));
         cardWordLabel.setForeground(new Color(0x1565C0));
+        cardWordLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        cardWordLabel.setToolTipText("點擊查詢劍橋詞典");
+        cardWordLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (cardWords != null && !cardWords.isEmpty())
+                    WordCardPopup.openCambridge(DashboardPanel.this, cardWords.get(cardIndex).getWord());
+            }
+        });
 
         cardPosLabel = new JLabel("", SwingConstants.CENTER);
         cardPosLabel.setFont(new Font("Microsoft JhengHei", Font.ITALIC, 15));
@@ -180,22 +246,21 @@ public class DashboardPanel extends JPanel {
         JButton prevBtn = navBtn("←");
         JButton nextBtn = navBtn("→");
         heartBtn = iconBtn("♡");
-        camBtn   = iconBtn("🔍");
+        colBtn   = iconBtn("＋");
+        colBtn.setToolTipText("加入群組資料夾");
         JButton pronounceBtn = iconBtn("🔊");
+        pronounceBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
 
         prevBtn.addActionListener(e -> { if (cardWords != null && !cardWords.isEmpty()) { cardIndex = (cardIndex - 1 + cardWords.size()) % cardWords.size(); loadCard(); } });
         nextBtn.addActionListener(e -> { if (cardWords != null && !cardWords.isEmpty()) { cardIndex = (cardIndex + 1) % cardWords.size(); loadCard(); } });
         heartBtn.addActionListener(e -> toggleHeart());
-        camBtn.addActionListener(e -> {
-            if (cardWords != null && cardIndex < cardWords.size())
-                WordCardPopup.openCambridge(this, cardWords.get(cardIndex).getWord());
-        });
+        colBtn.addActionListener(e -> showAddToCollectionDialog());
         pronounceBtn.addActionListener(e -> pronounce());
 
         btnRow.add(prevBtn);
         btnRow.add(heartBtn);
         btnRow.add(pronounceBtn);
-        btnRow.add(camBtn);
+        btnRow.add(colBtn);
         btnRow.add(nextBtn);
 
         outer.add(card,   BorderLayout.CENTER);
@@ -265,9 +330,53 @@ public class DashboardPanel extends JPanel {
         wrongCountLabel.setText(String.valueOf(ctrl.getWrongWords().size()));
         colCountLabel.setText(String.valueOf(ctrl.getCollections().size()));
         historyCountLabel.setText(String.valueOf(ctrl.getHistoryWords().size()));
-        // 閃卡用今日待複習；若無則用全部
-        List<Vocabulary> today = ctrl.getTodayWords();
-        cardWords = today.isEmpty() ? ctrl.getVocabList() : today;
+
+        // 更新單字卡來源選擇器（保留上次選擇）
+        updatingCombo = true;
+        String prevSel = sourceCombo.getSelectedItem() != null
+                         ? sourceCombo.getSelectedItem().toString() : null;
+        sourceCombo.removeAllItems();
+        sourceCombo.addItem("今日待複習");
+        sourceCombo.addItem("全部單字");
+        sourceCombo.addItem("TOEIC 多益單字");
+        sourceCombo.addItem("Favorite 收藏");
+        sourceCombo.addItem("錯誤單字");
+        for (VocabCollection col : ctrl.getCollections()) {
+            sourceCombo.addItem(col.getName());
+        }
+        if (prevSel != null) sourceCombo.setSelectedItem(prevSel);
+        updatingCombo = false;
+
+        updateCardSource();
+    }
+
+    // ── 依選擇來源更新閃卡單字清單 ────────────────────────────
+    private void updateCardSource() {
+        if (sourceCombo == null) return;
+        String sel = sourceCombo.getSelectedItem() != null
+                     ? sourceCombo.getSelectedItem().toString() : "今日待複習";
+        List<Vocabulary> words;
+        if (sel.equals("全部單字")) {
+            words = ctrl.getVocabList();
+        } else if (sel.equals("TOEIC 多益單字")) {
+            words = ctrl.getToeicWords();
+        } else if (sel.equals("Favorite 收藏")) {
+            words = ctrl.getFavoriteWords();
+        } else if (sel.equals("錯誤單字")) {
+            words = ctrl.getWrongWords();
+        } else {
+            // 先比對 collection 名稱
+            VocabCollection col = ctrl.getCollections().stream()
+                .filter(c -> c.getName().equals(sel)).findFirst().orElse(null);
+            if (col != null) {
+                words = ctrl.getCollectionWords(col);
+            } else {
+                // 今日待複習（預設）
+                List<Vocabulary> today = ctrl.getTodayWords();
+                words = today.isEmpty() ? ctrl.getVocabList() : today;
+            }
+        }
+        cardWords = words.isEmpty() ? ctrl.getVocabList() : words;
         if (cardIndex >= cardWords.size()) cardIndex = 0;
         loadCard();
     }
@@ -321,6 +430,100 @@ public class DashboardPanel extends JPanel {
         b.setBackground(AppColors.BG_CARD);
         b.setForeground(AppColors.TEXT_SECONDARY);
         b.setBorder(new CompoundBorder(new LineBorder(AppColors.BORDER_SOFT,1,true), new EmptyBorder(6,12,6,12)));
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return b;
+    }
+
+    private void showAddToCollectionDialog() {
+        if (cardWords == null || cardWords.isEmpty()) return;
+        Vocabulary v = cardWords.get(cardIndex);
+        List<VocabCollection> cols = ctrl.getCollections();
+        if (cols.isEmpty()) {
+            UIUtils.showMessage(this, "尚未建立任何群組，請先到「Collection 群組」建立群組", "加入群組");
+            return;
+        }
+
+        // ── 自訂樣式對話框 ──────────────────────────────────────
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dlg = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+        dlg.setUndecorated(true);
+
+        JPanel root = new JPanel(new BorderLayout(0, 14));
+        root.setBackground(AppColors.BG_MAIN);
+        root.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER, 2),
+            new EmptyBorder(22, 26, 18, 26)
+        ));
+
+        JLabel titleLbl = new JLabel("加入群組");
+        titleLbl.setFont(AppColors.FONT_HEAD);
+        titleLbl.setForeground(AppColors.TEXT_PRIMARY);
+        titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
+
+        JLabel msgLbl = new JLabel("將「" + v.getWord() + "」加入群組：");
+        msgLbl.setFont(AppColors.FONT_BODY);
+        msgLbl.setForeground(AppColors.TEXT_SECONDARY);
+
+        // 下拉選單
+        String[] names = cols.stream()
+            .map(c -> c.getName() + " (" + c.getWords().size() + " 個)")
+            .toArray(String[]::new);
+        JComboBox<String> combo = new JComboBox<>(names);
+        combo.setFont(AppColors.FONT_BODY);
+        combo.setBackground(AppColors.BG_CARD);
+        combo.setForeground(AppColors.TEXT_PRIMARY);
+        combo.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(4, 8, 4, 8)
+        ));
+
+        JPanel centerPanel = new JPanel(new BorderLayout(0, 10));
+        centerPanel.setOpaque(false);
+        centerPanel.add(msgLbl, BorderLayout.NORTH);
+        centerPanel.add(combo,  BorderLayout.CENTER);
+
+        // 按鈕
+        int[] result = {-1};
+        JButton cancel = styledDlgBtn("取消", AppColors.TEXT_SECONDARY, AppColors.BG_MAIN);
+        JButton ok     = styledDlgBtn("確定", AppColors.BTN_PRIMARY, Color.WHITE);
+        cancel.addActionListener(e -> dlg.dispose());
+        ok.addActionListener(e -> { result[0] = combo.getSelectedIndex(); dlg.dispose(); });
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btnRow.setOpaque(false);
+        btnRow.add(cancel);
+        btnRow.add(ok);
+
+        root.add(titleLbl,    BorderLayout.NORTH);
+        root.add(centerPanel, BorderLayout.CENTER);
+        root.add(btnRow,      BorderLayout.SOUTH);
+
+        dlg.setContentPane(root);
+        dlg.pack();
+        dlg.setMinimumSize(new Dimension(300, dlg.getHeight()));
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+
+        if (result[0] >= 0) {
+            cols.get(result[0]).addWord(v.getWord());
+            ctrl.saveCollections();
+            UIUtils.showMessage(this,
+                "已將「" + v.getWord() + "」加入「" + cols.get(result[0]).getName() + "」",
+                "成功");
+        }
+    }
+
+    private JButton styledDlgBtn(String text, Color bg, Color fg) {
+        JButton b = new JButton(text);
+        b.setFont(AppColors.FONT_BTN);
+        b.setBackground(bg);
+        b.setForeground(fg);
+        b.setOpaque(true);
+        b.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(5, 16, 5, 16)
+        ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return b;

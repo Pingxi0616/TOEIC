@@ -14,7 +14,8 @@ public class Vocabulary {
     private int    familiarity;   // 1~5
     private String lastReviewDate;
     private String nextReviewDate;
-    private boolean favorite;     // 收藏標記
+    private boolean favorite;      // 收藏標記
+    private boolean isCustom;     // true = 使用者自訂新增，false = 原始 TOEIC 單字（預設）
 
     public Vocabulary() {}
 
@@ -39,6 +40,7 @@ public class Vocabulary {
     public String  getLastReviewDate() { return lastReviewDate; }
     public String  getNextReviewDate() { return nextReviewDate; }
     public boolean isFavorite()        { return favorite; }
+    public boolean isCustom()          { return isCustom; }
 
     // ── Setters ───────────────────────────────────────────────
     public void setWord(String v)           { this.word = v; }
@@ -53,6 +55,7 @@ public class Vocabulary {
     public void setLastReviewDate(String v) { this.lastReviewDate = v; }
     public void setNextReviewDate(String v) { this.nextReviewDate = v; }
     public void setFavorite(boolean v)      { this.favorite = v; }
+    public void setCustom(boolean v)       { this.isCustom = v; }
 
     public String getFamiliarityStars() {
         int f = getFamiliarity();

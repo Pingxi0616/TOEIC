@@ -33,13 +33,13 @@ public class HistoryPanel extends JPanel {
     }
 
     private JPanel buildTopBar() {
-        JPanel p = new JPanel(new BorderLayout(12, 0));
+        JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(0, 0, 18, 0));
 
         JButton backBtn = buildBackBtn();
 
-        JLabel title = new JLabel("◷ History 已學單字");
+        JLabel title = new JLabel("History 已學單字");
         title.setFont(AppColors.FONT_TITLE);
         title.setForeground(new Color(0x5C6BC0));
 
@@ -47,14 +47,20 @@ public class HistoryPanel extends JPanel {
         hint.setFont(AppColors.FONT_SMALL);
         hint.setForeground(AppColors.TEXT_SECONDARY);
 
-        p.add(backBtn, BorderLayout.WEST);
-        p.add(title,   BorderLayout.CENTER);
-        p.add(hint,    BorderLayout.EAST);
+        JPanel right = new JPanel();
+        right.setLayout(new BoxLayout(right, BoxLayout.X_AXIS));
+        right.setOpaque(false);
+        right.add(hint);
+        right.add(Box.createHorizontalStrut(8));
+        right.add(backBtn);
+
+        p.add(title, BorderLayout.WEST);
+        p.add(right, BorderLayout.EAST);
         return p;
     }
 
     private JButton buildBackBtn() {
-        JButton b = new JButton("← 返回主頁");
+        JButton b = new JButton("返回主頁 →");
         b.setFont(AppColors.FONT_SMALL);
         b.setForeground(AppColors.TEXT_SECONDARY);
         b.setBackground(AppColors.BG_MAIN);

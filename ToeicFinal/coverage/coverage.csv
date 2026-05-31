@@ -1,0 +1,11 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+JaCoCo Coverage Report,controller,DashboardController,178,0,8,0,34,0,32,0,28,0
+JaCoCo Coverage Report,manager,FileManager.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
+JaCoCo Coverage Report,manager,FileManager.new TypeToken() {...},0,3,0,0,0,1,0,1,0,1
+JaCoCo Coverage Report,manager,ReviewManager,0,163,0,10,0,33,0,14,0,9
+JaCoCo Coverage Report,manager,QuizManager.QuizItem,0,9,0,0,0,4,0,1,0,1
+JaCoCo Coverage Report,manager,QuizManager,100,696,40,70,12,104,35,39,2,14
+JaCoCo Coverage Report,manager,QuizManager.Mode,0,27,0,0,0,1,0,1,0,1
+JaCoCo Coverage Report,manager,FileManager,83,262,8,22,14,46,13,12,5,5
+JaCoCo Coverage Report,model,Vocabulary,4,172,0,10,1,38,1,35,1,30
+JaCoCo Coverage Report,model,VocabCollection,62,0,2,0,13,0,11,0,10,0

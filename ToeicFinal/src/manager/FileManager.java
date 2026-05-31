@@ -15,9 +15,30 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class FileManager {
-    private static final String DATA_PATH       = "data/vocabulary.json";
-    private static final String COLLECTION_PATH = "data/collections.json";
+    // 自動偵測資料目錄：先找 class 所在的 out/ 旁邊的 data/，找不到再用相對路徑
+    private static final String BASE_DIR = resolveBaseDir();
+    private static final String DATA_PATH       = BASE_DIR + "data/vocabulary.json";
+    private static final String COLLECTION_PATH = BASE_DIR + "data/collections.json";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    private static String resolveBaseDir() {
+        // 1. 先試 class 檔所在目錄往上找 data/
+        try {
+            File clsDir = new File(FileManager.class.getProtectionDomain()
+                .getCodeSource().getLocation().toURI());
+            // clsDir 可能是 out/ 或 jar 檔；往上找直到含有 data/vocabulary.json
+            File dir = clsDir.isFile() ? clsDir.getParentFile() : clsDir;
+            for (int i = 0; i < 4; i++) {
+                if (new File(dir, "data/vocabulary.json").exists()) {
+                    return dir.getAbsolutePath().replace('\\', '/') + "/";
+                }
+                dir = dir.getParentFile();
+                if (dir == null) break;
+            }
+        } catch (Exception ignored) {}
+        // 2. 備援：使用工作目錄的相對路徑
+        return "";
+    }
 
     // ── Vocabulary ────────────────────────────────────────────
     public static List<Vocabulary> loadVocabulary() {

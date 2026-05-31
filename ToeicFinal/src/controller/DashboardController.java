@@ -49,6 +49,12 @@ public class DashboardController {
     public List<Vocabulary> getFavoriteWords() {
         return vocabList.stream().filter(Vocabulary::isFavorite).collect(Collectors.toList());
     }
+    public List<Vocabulary> getToeicWords() {
+        return vocabList.stream().filter(v -> !v.isCustom()).collect(Collectors.toList());
+    }
+    public int getToeicCount() {
+        return (int) vocabList.stream().filter(v -> !v.isCustom()).count();
+    }
 
     /** 取得某個 Collection 的 Vocabulary 清單 */
     public List<Vocabulary> getCollectionWords(VocabCollection col) {

@@ -32,23 +32,23 @@ public class FavoriteWordsPanel extends JPanel {
     }
 
     private JPanel buildTopBar() {
-        JPanel p = new JPanel(new BorderLayout(12, 0));
+        JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(0, 0, 18, 0));
 
         JButton backBtn = buildBackBtn();
 
-        JLabel title = new JLabel("♥ Favorite 單字區");
+        JLabel title = new JLabel("Favorite 單字區");
         title.setFont(AppColors.FONT_TITLE);
         title.setForeground(AppColors.TEXT_RED);
 
-        p.add(backBtn, BorderLayout.WEST);
-        p.add(title,   BorderLayout.CENTER);
+        p.add(title,    BorderLayout.WEST);
+        p.add(backBtn,  BorderLayout.EAST);
         return p;
     }
 
     private JButton buildBackBtn() {
-        JButton b = new JButton("← 返回主頁");
+        JButton b = new JButton("返回主頁 →");
         b.setFont(AppColors.FONT_SMALL);
         b.setForeground(AppColors.TEXT_SECONDARY);
         b.setBackground(AppColors.BG_MAIN);

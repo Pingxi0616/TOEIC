@@ -76,24 +76,16 @@ public class QuizManager {
             items.add(new QuizItem(vocabPool.get(i), vocabModes[i % 3]));
         }
 
-        // ── 填空題（需要有例句）──
-        List<Vocabulary> fillPool = vocabList.stream()
-                .filter(v -> v.getExample() != null && !v.getExample().isEmpty())
-                .collect(Collectors.toList());
-        Collections.shuffle(fillPool, random);
-        for (int i = 0; i < Math.min(fillCount, fillPool.size()); i++) {
-            // 避免與單字題重複
-            Vocabulary v = fillPool.get(i);
-            items.add(new QuizItem(v, Mode.FILL_BLANK));
+        // ── 填空題（所有單字均可，自動生成例句模板）──
+        List<Vocabulary> fillPool = new ArrayList<>(vocabList);
+        if (prioritizeWeak) {
+            fillPool.sort(Comparator.comparingInt(Vocabulary::getFamiliarity)
+                    .thenComparingInt(vv -> -vv.getWrongCount()));
+        } else {
+            Collections.shuffle(fillPool, random);
         }
-        // 若無例句則補充一般英翻中
-        if (fillPool.size() < fillCount) {
-            List<Vocabulary> fallback = new ArrayList<>(vocabList);
-            Collections.shuffle(fallback, random);
-            int need = fillCount - fillPool.size();
-            for (int i = 0; i < Math.min(need, fallback.size()); i++) {
-                items.add(new QuizItem(fallback.get(i), Mode.EN_TO_CN));
-            }
+        for (int i = 0; i < Math.min(fillCount, fillPool.size()); i++) {
+            items.add(new QuizItem(fillPool.get(i), Mode.FILL_BLANK));
         }
 
         // ── 錯題複習 ──
@@ -172,13 +164,82 @@ public class QuizManager {
         };
     }
 
+    // ── 填空例句模板（依詞性分組）───────────────────────────
+    private static final String[] VERB_TEMPLATES = {
+        "The manager decided to _____ the proposal without further delay.",
+        "She was required to _____ the report before the board meeting.",
+        "The team worked hard to _____ their quarterly targets on time.",
+        "It is recommended to _____ the document carefully before submitting.",
+        "The company chose to _____ its overseas operations next fiscal year.",
+        "He needs to _____ the agreement terms with the legal department.",
+        "They were instructed to _____ the process as quickly as possible.",
+        "The director asked all staff members to _____ the new procedures.",
+    };
+    private static final String[] NOUN_TEMPLATES = {
+        "The _____ of the project was presented at the annual conference.",
+        "Strong _____ is the foundation of any successful organization.",
+        "A clear _____ helps employees understand their responsibilities.",
+        "The board approved additional budget for _____ next quarter.",
+        "Without proper _____, productivity in the office will decline.",
+        "The report analyzed the _____ of the new marketing strategy.",
+        "Good _____ between departments improves overall performance.",
+    };
+    private static final String[] ADJ_TEMPLATES = {
+        "The new proposal was _____ and addressed all major concerns.",
+        "It is _____ for all staff members to attend the safety training.",
+        "She delivered a _____ report that fully satisfied the committee.",
+        "The client was _____ with the quality of service provided.",
+        "A _____ understanding of the contract terms is necessary.",
+        "The quarterly results were _____ and exceeded the original forecast.",
+    };
+    private static final String[] ADV_TEMPLATES = {
+        "The team completed the project _____ before the deadline.",
+        "The director _____ reviewed all submitted applications.",
+        "She answered the interviewer's questions _____ and confidently.",
+        "The office manager _____ updated all employee records.",
+        "The proposal was _____ accepted by the board of directors.",
+    };
+    private static final String[] PREP_TEMPLATES = {
+        "She walked _____ the park on her way to the office.",
+        "The files were stored _____ the cabinet for easy access.",
+        "He traveled _____ several cities to attend the annual summit.",
+        "The package was shipped _____ the country within two days.",
+        "Please place the signed documents _____ the desk before leaving.",
+        "The branch office is located _____ the main building.",
+        "The team gathered _____ the conference room for the briefing.",
+    };
+    private static final String[] CONJ_TEMPLATES = {
+        "She studied hard, _____ she still found the final exam challenging.",
+        "He prepared thoroughly, _____ the results were not as expected.",
+        "The project was finished on time, _____ the budget was exceeded.",
+        "The client approved the design, _____ requested several minor changes.",
+    };
+
     private String buildFillBlank(Vocabulary v) {
-        if (v.getExample() == null || v.getExample().isEmpty()) {
-            int len = v.getWord() != null ? v.getWord().length() : 6;
-            return "_".repeat(len) + "  （提示：" + (v.getMeaning() != null ? v.getMeaning() : "") + "）";
+        String word    = v.getWord() != null ? v.getWord() : "";
+        String pos     = v.getPos() != null ? v.getPos().toLowerCase() : "";
+        String example = v.getExample();
+
+        // 若有真實例句且能找到單字，直接把單字替換為 _____
+        if (example != null && !example.isBlank()) {
+            String blanked = example.replaceAll(
+                    "(?i)\\b" + Pattern.quote(word) + "\\b", "_____");
+            if (!blanked.equals(example)) return blanked;
+            blanked = example.replace(word, "_____");
+            if (!blanked.equals(example)) return blanked;
         }
-        String blank = "_".repeat(v.getWord().length());
-        return v.getExample().replaceAll("(?i)\\b" + Pattern.quote(v.getWord()) + "\\b", blank);
+
+        // 依詞性選擇模板：用 contains 支援複合詞性（如 "prep./adv."、"n./v."）
+        String[] pool;
+        if      (pos.contains("prep"))                                          pool = PREP_TEMPLATES;
+        else if (pos.contains("conj"))                                          pool = CONJ_TEMPLATES;
+        else if (pos.contains("adv"))                                           pool = ADV_TEMPLATES;
+        else if (pos.contains("adj"))                                           pool = ADJ_TEMPLATES;
+        else if (pos.contains("v"))                                             pool = VERB_TEMPLATES;
+        else if (pos.contains("n"))                                             pool = NOUN_TEMPLATES;
+        else                                                                    pool = NOUN_TEMPLATES;
+
+        return pool[Math.abs(word.hashCode()) % pool.length];
     }
 
     public List<Vocabulary> getWordsWithExample() {

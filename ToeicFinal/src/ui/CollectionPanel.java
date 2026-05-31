@@ -33,13 +33,13 @@ public class CollectionPanel extends JPanel {
     }
 
     private JPanel buildTopBar() {
-        JPanel p = new JPanel(new BorderLayout(12, 0));
+        JPanel p = new JPanel(new BorderLayout());
         p.setOpaque(false);
         p.setBorder(new EmptyBorder(0, 0, 18, 0));
 
         JButton backBtn = buildBackBtn();
 
-        JLabel title = new JLabel("☰ Collection 收藏群組");
+        JLabel title = new JLabel("Collection 收藏群組");
         title.setFont(AppColors.FONT_TITLE);
         title.setForeground(AppColors.TEXT_PRIMARY);
 
@@ -52,14 +52,20 @@ public class CollectionPanel extends JPanel {
         addBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         addBtn.addActionListener(e -> showAddGroupDialog());
 
-        p.add(backBtn, BorderLayout.WEST);
-        p.add(title,   BorderLayout.CENTER);
-        p.add(addBtn,  BorderLayout.EAST);
+        JPanel right = new JPanel();
+        right.setLayout(new BoxLayout(right, BoxLayout.X_AXIS));
+        right.setOpaque(false);
+        right.add(addBtn);
+        right.add(Box.createHorizontalStrut(8));
+        right.add(backBtn);
+
+        p.add(title, BorderLayout.WEST);
+        p.add(right, BorderLayout.EAST);
         return p;
     }
 
     private JButton buildBackBtn() {
-        JButton b = new JButton("← 返回主頁");
+        JButton b = new JButton("返回主頁 →");
         b.setFont(AppColors.FONT_SMALL);
         b.setForeground(AppColors.TEXT_SECONDARY);
         b.setBackground(AppColors.BG_MAIN);
@@ -185,7 +191,7 @@ public class CollectionPanel extends JPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
         row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        JLabel nameLbl = new JLabel("📁  " + col.getName() + "  (" + col.getWords().size() + ")");
+        JLabel nameLbl = new JLabel(col.getName() + "  (" + col.getWords().size() + ")");
         nameLbl.setFont(AppColors.FONT_BODY);
         nameLbl.setForeground(AppColors.TEXT_PRIMARY);
 
@@ -290,8 +296,13 @@ public class CollectionPanel extends JPanel {
         btnGroup.add(moveBtn);
         btnGroup.add(rmBtn);
 
-        row.add(lbl,      BorderLayout.CENTER);
-        row.add(btnGroup, BorderLayout.EAST);
+        // GridBagLayout 預設將子元件垂直 + 水平置中
+        JPanel btnWrapper = new JPanel(new GridBagLayout());
+        btnWrapper.setOpaque(false);
+        btnWrapper.add(btnGroup);
+
+        row.add(lbl,        BorderLayout.CENTER);
+        row.add(btnWrapper, BorderLayout.EAST);
         return row;
     }
 
@@ -302,24 +313,96 @@ public class CollectionPanel extends JPanel {
                 .collect(java.util.stream.Collectors.toList());
 
         if (others.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                "沒有其他群組可以移動，請先新增群組", "提示", JOptionPane.INFORMATION_MESSAGE);
+            UIUtils.showMessage(this, "沒有其他群組可以移動，請先新增群組。", "提示");
             return;
         }
 
         String[] options = others.stream()
                 .map(c -> c.getName() + " (" + c.getWords().size() + " 個單字)")
                 .toArray(String[]::new);
-        String chosen = (String) JOptionPane.showInputDialog(this,
-            "將「" + word + "」移動到：",
-            "移動單字", JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-        if (chosen != null) {
-            int idx = java.util.Arrays.asList(options).indexOf(chosen);
+
+        // ── 自訂主題 Dialog ──────────────────────────────────
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JDialog dlg = new JDialog(w, Dialog.ModalityType.APPLICATION_MODAL);
+        dlg.setUndecorated(true);
+
+        JPanel content = new JPanel(new BorderLayout(0, 14));
+        content.setBackground(AppColors.BG_MAIN);
+        content.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER, 2),
+            new EmptyBorder(22, 26, 18, 26)
+        ));
+
+        JLabel titleLbl = new JLabel("移動單字");
+        titleLbl.setFont(AppColors.FONT_HEAD);
+        titleLbl.setForeground(AppColors.TEXT_PRIMARY);
+        titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
+
+        JLabel msgLbl = new JLabel("將「" + word + "」移動到：");
+        msgLbl.setFont(AppColors.FONT_BODY);
+        msgLbl.setForeground(AppColors.TEXT_SECONDARY);
+
+        JPanel north = new JPanel(new BorderLayout(0, 6));
+        north.setOpaque(false);
+        north.add(titleLbl, BorderLayout.NORTH);
+        north.add(msgLbl,   BorderLayout.SOUTH);
+
+        JComboBox<String> combo = new JComboBox<>(options);
+        combo.setFont(AppColors.FONT_BODY);
+        combo.setBackground(AppColors.BG_CARD);
+        combo.setForeground(AppColors.TEXT_PRIMARY);
+        combo.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(3, 6, 3, 6)
+        ));
+
+        VocabCollection[] chosen = {null};
+
+        JButton cancelBtn = styledDlgBtn("取消", AppColors.BG_MAIN, AppColors.TEXT_SECONDARY);
+        JButton okBtn     = styledDlgBtn("確定", AppColors.BTN_PRIMARY, Color.WHITE);
+        cancelBtn.addActionListener(e -> dlg.dispose());
+        okBtn.addActionListener(e -> {
+            int idx = combo.getSelectedIndex();
+            if (idx >= 0) chosen[0] = others.get(idx);
+            dlg.dispose();
+        });
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btnRow.setOpaque(false);
+        btnRow.add(cancelBtn);
+        btnRow.add(okBtn);
+
+        content.add(north,   BorderLayout.NORTH);
+        content.add(combo,   BorderLayout.CENTER);
+        content.add(btnRow,  BorderLayout.SOUTH);
+
+        dlg.setContentPane(content);
+        dlg.pack();
+        dlg.setMinimumSize(new Dimension(300, dlg.getHeight()));
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+
+        if (chosen[0] != null) {
             selectedCol.removeWord(word);
-            others.get(idx).addWord(word);
+            chosen[0].addWord(word);
             ctrl.saveCollections();
             refreshWordList();
         }
+    }
+
+    private JButton styledDlgBtn(String text, Color bg, Color fg) {
+        JButton b = new JButton(text);
+        b.setFont(AppColors.FONT_BTN);
+        b.setBackground(bg);
+        b.setForeground(fg);
+        b.setOpaque(true);
+        b.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(5, 16, 5, 16)
+        ));
+        b.setFocusPainted(false);
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return b;
     }
 
     private void showAddGroupDialog() {

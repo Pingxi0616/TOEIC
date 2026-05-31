@@ -1,0 +1,108 @@
+
+Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+?
+¢u¢w JUnit Jupiter ?
+¢x  ¢u¢w ReviewManagerTest ?
+¢x  ¢x  ¢u¢w averageFamiliarityPercent_allMaxFamiliarity_returns100() ?
+¢x  ¢x  ¢u¢w getTodayReviewWords_returnsDueWordsOnly() ?
+¢x  ¢x  ¢u¢w correctAnswer_atMaxFamiliarity_staysAt5() ?
+¢x  ¢x  ¢u¢w wrongAnswer_accumulatesWrongCount() ?
+¢x  ¢x  ¢u¢w correctAnswer_setsLastReviewDateToToday() ?
+¢x  ¢x  ¢u¢w correctAnswer_atMaxFamiliarity_intervalIs14Days() ?
+¢x  ¢x  ¢u¢w averageFamiliarityPercent_mixedValues() ?
+¢x  ¢x  ¢u¢w correctAnswer_incrementsCorrectCountAndFamiliarity() ?
+¢x  ¢x  ¢u¢w wrongAnswer_atMinFamiliarity_staysAt1() ?
+¢x  ¢x  ¢u¢w getLearnedCount_countsWordsWithCorrectCountOrHighFamiliarity() ?
+¢x  ¢x  ¢u¢w wrongAnswer_incrementsWrongCountAndDecreasesFamiliarity() ?
+¢x  ¢x  ¢u¢w correctAnswer_setsNextReviewDateByInterval() ?
+¢x  ¢x  ¢u¢w getWrongWords_excludesZeroWrongCount() ?
+¢x  ¢x  ¢u¢w getWrongWords_sortedByWrongCountDescending() ?
+¢x  ¢x  ¢u¢w getTodayReviewWords_emptyPool_returnsEmpty() ?
+¢x  ¢x  ¢u¢w wrongAnswer_setsNextReviewToTomorrow() ?
+¢x  ¢x  ¢u¢w getLearnedCount_emptyList_returnsZero() ?
+¢x  ¢x  ¢|¢w averageFamiliarityPercent_emptyList_returnsZero() ?
+¢x  ¢u¢w FileManagerTest ?
+¢x  ¢x  ¢u¢w importFromCsv_nonExistentFile_returnsEmptyList() ?
+¢x  ¢x  ¢u¢w importFromCsv_setsDefaultFamiliarityOne() ?
+¢x  ¢x  ¢u¢w loadVocabulary_returnsNonNullList() ?
+¢x  ¢x  ¢u¢w importFromCsv_skipsLineWithoutComma() ?
+¢x  ¢x  ¢u¢w importFromCsv_skipsEmptyLines() ?
+¢x  ¢x  ¢u¢w importFromCsv_multipleEntries() ?
+¢x  ¢x  ¢u¢w importFromCsv_extractsPos() ?
+¢x  ¢x  ¢u¢w importFromCsv_singleEntry_parsedCorrectly() ?
+¢x  ¢x  ¢u¢w importFromCsv_entryWithoutPos_stillImported() ?
+¢x  ¢x  ¢u¢w loadVocabulary_wordsHaveNonEmptyWordField() ?
+¢x  ¢x  ¢|¢w importFromCsv_setsLastAndNextReviewDate() ?
+¢x  ¢u¢w QuizManagerTest ?
+¢x  ¢x  ¢u¢w getQuestion_fillBlank_templateByPos_noun() ?
+¢x  ¢x  ¢u¢w getAnswer_nullMeaning_returnsEmpty() ?
+¢x  ¢x  ¢u¢w getQuestion_fillBlank_templateByPos_adj() ?
+¢x  ¢x  ¢u¢w generateOptions_noDuplicates() ?
+¢x  ¢x  ¢u¢w getAnswer_fillBlank_returnsWord() ?
+¢x  ¢x  ¢u¢w generateQuizList_noWrongWords_stillFillsCount() ?
+¢x  ¢x  ¢u¢w generateOptions_returns4Options() ?
+¢x  ¢x  ¢u¢w generateQuizList_emptyPool_returnsEmpty() ?
+¢x  ¢x  ¢u¢w getWordsWithExample_filtersCorrectly() ?
+¢x  ¢x  ¢u¢w getQuestion_cnToEn_returnsMeaning() ?
+¢x  ¢x  ¢u¢w generateQuizList_countRespected() ?
+¢x  ¢x  ¢u¢w generateOptions_alwaysContainsCorrectAnswer() ?
+¢x  ¢x  ¢u¢w getAnswer_cnToEn_returnsWord() ?
+¢x  ¢x  ¢u¢w getQuestion_phrase_returnsPhraseMeaning() ?
+¢x  ¢x  ¢u¢w generateOptions_noNullOrEmptyOption() ?
+¢x  ¢x  ¢u¢w getQuestion_fillBlank_noExample_usesTemplate() ?
+¢x  ¢x  ¢u¢w generateMixedQuiz_fillBlankItemsHaveCorrectMode() ?
+¢x  ¢x  ¢u¢w generateMixedQuiz_totalCountCorrect() ?
+¢x  ¢x  ¢u¢w getAnswer_nullWord_returnsEmpty() ?
+¢x  ¢x  ¢u¢w getWordsWithExample_emptyPool_returnsEmpty() ?
+¢x  ¢x  ¢u¢w getAnswer_phrase_noPhrase_fallsBackToWord() ?
+¢x  ¢x  ¢u¢w modeLabel_allFourModes() ?
+¢x  ¢x  ¢u¢w getQuestion_fillBlank_withExample_replacesWord() ?
+¢x  ¢x  ¢u¢w generateQuizList_poolSmallerThanCount() ?
+¢x  ¢x  ¢u¢w getAnswer_phrase_returnsPhrase() ?
+¢x  ¢x  ¢u¢w getAnswer_enToCn_returnsMeaning() ?
+¢x  ¢x  ¢u¢w generateQuizList_prioritizeWrong_mostWrongWordsLeadTheList() ?
+¢x  ¢x  ¢u¢w getQuestion_enToCn_returnsWord() ?
+¢x  ¢x  ¢|¢w generateMixedQuiz_wrongCountCappedByPool() ?
+¢x  ¢|¢w VocabularyTest ?
+¢x     ¢u¢w wrongAndCorrectCounts_defaultZero() ?
+¢x     ¢u¢w toggleFavorite() ?
+¢x     ¢u¢w paramConstructor_setsAllFields() ?
+¢x     ¢u¢w getFamiliarityStars_level1() ?
+¢x     ¢u¢w getFamiliarityStars_level3() ?
+¢x     ¢u¢w getFamiliarityStars_level5() ?
+¢x     ¢u¢w isDueToday_today_returnsTrue() ?
+¢x     ¢u¢w isDueToday_nullDate_returnsTrue() ?
+¢x     ¢u¢w setFamiliarity_acceptsValidRange() ?
+¢x     ¢u¢w setWrongAndCorrectCount() ?
+¢x     ¢u¢w isCustom_defaultFalse() ?
+¢x     ¢u¢w getPos_null_returnsEmptyString() ?
+¢x     ¢u¢w getFamiliarity_defaultConstructor_returnsOne() ?
+¢x     ¢u¢w toString_containsWordAndMeaning() ?
+¢x     ¢u¢w isDueToday_futureDate_returnsFalse() ?
+¢x     ¢u¢w getExample_null_returnsEmptyString() ?
+¢x     ¢u¢w isDueToday_pastDate_returnsTrue() ?
+¢x     ¢u¢w setFamiliarity_clampsAboveMax() ?
+¢x     ¢u¢w setFamiliarity_clampsBelowMin() ?
+¢x     ¢|¢w defaultConstructor_fieldsAreNull() ?
+¢u¢w JUnit Vintage ?
+¢|¢w JUnit Platform Suite ?
+
+Test run finished after 198 ms
+[         7 containers found      ]
+[         0 containers skipped    ]
+[         7 containers started    ]
+[         0 containers aborted    ]
+[         7 containers successful ]
+[         0 containers failed     ]
+[        78 tests found           ]
+[         0 tests skipped         ]
+[        78 tests started         ]
+[         0 tests aborted         ]
+[        78 tests successful      ]
+[         0 tests failed          ]
+
+
+WARNING: Delegated to the 'execute' command.
+         This behaviour has been deprecated and will be removed in a future release.
+         Please use the 'execute' command directly.
