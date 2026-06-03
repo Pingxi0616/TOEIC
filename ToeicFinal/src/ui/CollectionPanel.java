@@ -39,9 +39,19 @@ public class CollectionPanel extends JPanel {
 
         JButton backBtn = buildBackBtn();
 
-        JLabel title = new JLabel("Collection 收藏群組");
-        title.setFont(AppColors.FONT_TITLE);
-        title.setForeground(AppColors.TEXT_PRIMARY);
+        JLabel iconLbl = new JLabel("★");
+        iconLbl.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 22));
+        iconLbl.setForeground(new Color(0x2E7D6E));
+
+        JLabel titleLbl = new JLabel(" Collection 收藏群組");
+        titleLbl.setFont(AppColors.FONT_TITLE);
+        titleLbl.setForeground(new Color(0x2E7D6E));
+
+        JPanel title = new JPanel();
+        title.setLayout(new BoxLayout(title, BoxLayout.X_AXIS));
+        title.setOpaque(false);
+        title.add(iconLbl);
+        title.add(titleLbl);
 
         JButton addBtn = new JButton("＋ 新增群組");
         addBtn.setFont(AppColors.FONT_BTN);
@@ -50,6 +60,7 @@ public class CollectionPanel extends JPanel {
         addBtn.setBorder(new EmptyBorder(8, 16, 8, 16));
         addBtn.setFocusPainted(false);
         addBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(addBtn, AppColors.BTN_PRIMARY);
         addBtn.addActionListener(e -> showAddGroupDialog());
 
         JPanel right = new JPanel();
@@ -65,16 +76,17 @@ public class CollectionPanel extends JPanel {
     }
 
     private JButton buildBackBtn() {
-        JButton b = new JButton("返回主頁 →");
-        b.setFont(AppColors.FONT_SMALL);
+        JButton b = new JButton("返回主頁");
+        b.setFont(AppColors.FONT_BTN);
         b.setForeground(AppColors.TEXT_SECONDARY);
         b.setBackground(AppColors.BG_MAIN);
         b.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(4, 10, 4, 10)
+            new EmptyBorder(8, 16, 8, 16)
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BG_CARD);
         b.addActionListener(e -> onBack.run());
         return b;
     }
@@ -203,10 +215,7 @@ public class CollectionPanel extends JPanel {
         delBtn.setFocusPainted(false);
         delBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         delBtn.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "確定刪除群組「" + col.getName() + "」？",
-                "刪除確認", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
+            if (showConfirmDialog("確定刪除群組「" + col.getName() + "」？")) {
                 if (selectedCol == col) selectedCol = null;
                 ctrl.removeCollection(col);
                 refresh();
@@ -231,20 +240,33 @@ public class CollectionPanel extends JPanel {
                 .filter(v -> v.getWord().equals(word))
                 .findFirst().orElse(null);
 
-        JPanel row = new JPanel(new BorderLayout(8, 0));
+        JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setBackground(AppColors.BG_CARD);
         row.setBorder(new CompoundBorder(
-            new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(8, 12, 8, 8)
+            new LineBorder(AppColors.BORDER, 1, true),
+            new EmptyBorder(12, 16, 12, 16)
         ));
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
 
-        String display = vocab != null
-            ? word + "  (" + vocab.getPos() + ")  " + vocab.getMeaning()
+        JPanel info = new JPanel(new GridLayout(2, 1, 0, 2));
+        info.setOpaque(false);
+
+        String wordLine = vocab != null
+            ? word + "  " + vocab.getFamiliarityStars()
             : word;
-        JLabel lbl = new JLabel(display);
-        lbl.setFont(AppColors.FONT_BODY);
-        lbl.setForeground(AppColors.TEXT_PRIMARY);
+        JLabel wordLbl = new JLabel(wordLine);
+        wordLbl.setFont(AppColors.FONT_HEAD);
+        wordLbl.setForeground(AppColors.TEXT_PRIMARY);
+
+        String detailLine = vocab != null
+            ? "(" + vocab.getPos() + ")  " + vocab.getMeaning()
+            : "";
+        JLabel detailLbl = new JLabel(detailLine);
+        detailLbl.setFont(AppColors.FONT_BODY);
+        detailLbl.setForeground(AppColors.TEXT_SECONDARY);
+
+        info.add(wordLbl);
+        info.add(detailLbl);
 
         if (vocab != null) {
             final Vocabulary finalVocab = vocab;
@@ -254,7 +276,7 @@ public class CollectionPanel extends JPanel {
                     WordCardPopup.show(CollectionPanel.this, finalVocab);
                 }
                 @Override public void mouseEntered(java.awt.event.MouseEvent e) {
-                    row.setBackground(new Color(0xF0E8D8));
+                    row.setBackground(new Color(0xD3E2DA));
                 }
                 @Override public void mouseExited(java.awt.event.MouseEvent e) {
                     row.setBackground(AppColors.BG_CARD);
@@ -271,7 +293,7 @@ public class CollectionPanel extends JPanel {
         moveBtn.setBackground(AppColors.BG_CARD);
         moveBtn.setBorder(new CompoundBorder(
             new LineBorder(new Color(0x5C6BC0), 1, true),
-            new EmptyBorder(2, 6, 2, 6)
+            new EmptyBorder(4, 8, 4, 8)
         ));
         moveBtn.setFocusPainted(false);
         moveBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -283,7 +305,7 @@ public class CollectionPanel extends JPanel {
         rmBtn.setBackground(AppColors.BG_CARD);
         rmBtn.setBorder(new CompoundBorder(
             new LineBorder(AppColors.TEXT_RED, 1, true),
-            new EmptyBorder(2, 6, 2, 6)
+            new EmptyBorder(4, 8, 4, 8)
         ));
         rmBtn.setFocusPainted(false);
         rmBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -296,12 +318,11 @@ public class CollectionPanel extends JPanel {
         btnGroup.add(moveBtn);
         btnGroup.add(rmBtn);
 
-        // GridBagLayout 預設將子元件垂直 + 水平置中
         JPanel btnWrapper = new JPanel(new GridBagLayout());
         btnWrapper.setOpaque(false);
         btnWrapper.add(btnGroup);
 
-        row.add(lbl,        BorderLayout.CENTER);
+        row.add(info,       BorderLayout.CENTER);
         row.add(btnWrapper, BorderLayout.EAST);
         return row;
     }
@@ -358,7 +379,7 @@ public class CollectionPanel extends JPanel {
 
         VocabCollection[] chosen = {null};
 
-        JButton cancelBtn = styledDlgBtn("取消", AppColors.BG_MAIN, AppColors.TEXT_SECONDARY);
+        JButton cancelBtn = styledDlgBtn("取消", new Color(0x9E8272), Color.WHITE);
         JButton okBtn     = styledDlgBtn("確定", AppColors.BTN_PRIMARY, Color.WHITE);
         cancelBtn.addActionListener(e -> dlg.dispose());
         okBtn.addActionListener(e -> {
@@ -390,6 +411,53 @@ public class CollectionPanel extends JPanel {
         }
     }
 
+    /** 自訂樣式的確認對話框，回傳 true = 確定 */
+    private boolean showConfirmDialog(String message) {
+        Window w = SwingUtilities.getWindowAncestor(this);
+        JDialog dlg = new JDialog(w, Dialog.ModalityType.APPLICATION_MODAL);
+        dlg.setUndecorated(true);
+
+        JPanel content = new JPanel(new BorderLayout(0, 14));
+        content.setBackground(AppColors.BG_MAIN);
+        content.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER, 2),
+            new EmptyBorder(22, 26, 18, 26)
+        ));
+
+        JLabel titleLbl = new JLabel("刪除確認");
+        titleLbl.setFont(AppColors.FONT_HEAD);
+        titleLbl.setForeground(AppColors.TEXT_PRIMARY);
+        titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
+
+        JLabel msgLbl = new JLabel(message);
+        msgLbl.setFont(AppColors.FONT_BODY);
+        msgLbl.setForeground(AppColors.TEXT_SECONDARY);
+
+        boolean[] result = {false};
+
+        JButton cancelBtn = styledDlgBtn("取消", new Color(0x9E8272), Color.WHITE);
+        cancelBtn.addActionListener(e -> dlg.dispose());
+
+        JButton okBtn = styledDlgBtn("確定刪除", AppColors.BTN_PRIMARY, Color.WHITE);
+        okBtn.addActionListener(e -> { result[0] = true; dlg.dispose(); });
+
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        btnRow.setOpaque(false);
+        btnRow.add(cancelBtn);
+        btnRow.add(okBtn);
+
+        content.add(titleLbl, BorderLayout.NORTH);
+        content.add(msgLbl,   BorderLayout.CENTER);
+        content.add(btnRow,   BorderLayout.SOUTH);
+
+        dlg.setContentPane(content);
+        dlg.pack();
+        dlg.setMinimumSize(new Dimension(360, dlg.getHeight()));
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
+        return result[0];
+    }
+
     private JButton styledDlgBtn(String text, Color bg, Color fg) {
         JButton b = new JButton(text);
         b.setFont(AppColors.FONT_BTN);
@@ -402,6 +470,7 @@ public class CollectionPanel extends JPanel {
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, bg);
         return b;
     }
 
@@ -410,17 +479,17 @@ public class CollectionPanel extends JPanel {
         JDialog dlg = new JDialog(w, Dialog.ModalityType.APPLICATION_MODAL);
         dlg.setUndecorated(true);
 
-        JPanel content = new JPanel(new BorderLayout(0, 12));
+        JPanel content = new JPanel(new BorderLayout(0, 14));
         content.setBackground(AppColors.BG_MAIN);
         content.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER, 2),
-            new EmptyBorder(24, 28, 20, 28)
+            new EmptyBorder(22, 26, 18, 26)
         ));
 
         JLabel titleLbl = new JLabel("新增群組");
-        titleLbl.setFont(AppColors.FONT_TITLE);
+        titleLbl.setFont(AppColors.FONT_HEAD);
         titleLbl.setForeground(AppColors.TEXT_PRIMARY);
-        titleLbl.setBorder(new EmptyBorder(0, 0, 8, 0));
+        titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
 
         JLabel nameLbl = new JLabel("群組名稱：");
         nameLbl.setFont(AppColors.FONT_BODY);
@@ -431,19 +500,24 @@ public class CollectionPanel extends JPanel {
         nameField.setBackground(AppColors.BG_CARD);
         nameField.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(6, 8, 6, 8)
+            new EmptyBorder(6, 10, 6, 10)
         ));
 
-        JPanel fieldPanel = new JPanel(new BorderLayout(0, 6));
-        fieldPanel.setOpaque(false);
-        fieldPanel.add(nameLbl,   BorderLayout.NORTH);
-        fieldPanel.add(nameField, BorderLayout.CENTER);
+        nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, nameField.getPreferredSize().height));
 
-        JButton cancelBtn = styledBtn("取消", AppColors.TEXT_SECONDARY, AppColors.BG_MAIN, AppColors.BORDER_SOFT);
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setOpaque(false);
+        nameLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        nameField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        centerPanel.add(nameLbl);
+        centerPanel.add(Box.createVerticalStrut(10));
+        centerPanel.add(nameField);
+
+        JButton cancelBtn = styledDlgBtn("取消", new Color(0x9E8272), Color.WHITE);
         cancelBtn.addActionListener(e -> dlg.dispose());
 
-        JButton okBtn = styledBtn("確認建立", Color.WHITE, AppColors.BORDER, AppColors.BORDER);
-        okBtn.setOpaque(true);
+        JButton okBtn = styledDlgBtn("確認建立", AppColors.BTN_PRIMARY, Color.WHITE);
         okBtn.addActionListener(e -> {
             String name = nameField.getText().trim();
             if (!name.isEmpty()) {
@@ -455,19 +529,22 @@ public class CollectionPanel extends JPanel {
             dlg.dispose();
         });
 
+        // Enter 鍵直接確認
+        nameField.addActionListener(e -> okBtn.doClick());
+
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btnRow.setOpaque(false);
         btnRow.add(cancelBtn);
         btnRow.add(okBtn);
 
-        content.add(titleLbl,   BorderLayout.NORTH);
-        content.add(fieldPanel, BorderLayout.CENTER);
-        content.add(btnRow,     BorderLayout.SOUTH);
+        content.add(titleLbl,    BorderLayout.NORTH);
+        content.add(centerPanel, BorderLayout.CENTER);
+        content.add(btnRow,      BorderLayout.SOUTH);
 
         dlg.setContentPane(content);
-        dlg.pack();
-        dlg.setMinimumSize(new Dimension(320, dlg.getHeight()));
+        dlg.setSize(300, 210);
         dlg.setLocationRelativeTo(this);
+        SwingUtilities.invokeLater(nameField::requestFocusInWindow);
         dlg.setVisible(true);
     }
 

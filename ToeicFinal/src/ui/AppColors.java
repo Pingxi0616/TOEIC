@@ -23,7 +23,7 @@ public class AppColors {
     public static final Color TEXT_ORANGE    = new Color(0xE65100);
 
     // 按鈕
-    public static final Color BTN_PRIMARY    = new Color(0x2D2D2D);
+    public static final Color BTN_PRIMARY    = new Color(0x7C6250);
     public static final Color BTN_SUCCESS    = new Color(0x2E7D32);
     public static final Color BTN_DANGER     = new Color(0xC62828);
     public static final Color BTN_NEUTRAL    = new Color(0xF5EFE0);

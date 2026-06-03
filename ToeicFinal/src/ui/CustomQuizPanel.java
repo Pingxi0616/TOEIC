@@ -11,9 +11,14 @@ public class CustomQuizPanel extends JPanel {
 
     private final DashboardController ctrl;
 
-    private JSlider vocabSlider, fillSlider, wrongSlider;
-    private JLabel  vocabVal, fillVal, wrongVal, totalLabel;
-    private JToggleButton weakToggle, recentToggle;
+    private JSlider vocabSlider, fillSlider;
+    private JLabel  vocabVal, fillVal;
+    private boolean adjusting = false;
+
+    // 出題偏好：已學、尚學、錯誤、隨機（單選）
+    // 0=已學  1=尚學  2=錯誤  3=隨機
+    private int poolChoice = 0;
+    private JToggleButton poolLearnedBtn, poolUnlearnedBtn, poolWrongBtn, poolRandomBtn;
 
     // 出題來源
     private String quizSource = "全部單字";
@@ -41,7 +46,10 @@ public class CustomQuizPanel extends JPanel {
         JLabel t = new JLabel("客製化出題");
         t.setFont(AppColors.FONT_TITLE);
         t.setForeground(AppColors.TEXT_PRIMARY);
-        p.add(t, BorderLayout.WEST);
+        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        west.setOpaque(false);
+        west.add(t);
+        p.add(west, BorderLayout.WEST);
         return p;
     }
 
@@ -50,18 +58,15 @@ public class CustomQuizPanel extends JPanel {
         JPanel p = new JPanel(new BorderLayout(0, 14));
         p.setOpaque(false);
 
-        JPanel topRow = new JPanel(new GridLayout(1, 2, 14, 0));
-        topRow.setOpaque(false);
-        topRow.add(buildRatioCard());
-        topRow.add(buildPreferenceCard());
+        JPanel grid = new JPanel(new GridLayout(2, 2, 14, 14));
+        grid.setOpaque(false);
+        grid.setBorder(new EmptyBorder(0, 6, 0, 0));
+        grid.add(buildRatioCard());
+        grid.add(buildPreferenceCard());
+        grid.add(buildSourceCard());
+        grid.add(buildFamiliarityCard());
 
-        JPanel botRow = new JPanel(new GridLayout(1, 2, 14, 0));
-        botRow.setOpaque(false);
-        botRow.add(buildSourceCard());
-        botRow.add(buildFamiliarityCard());
-
-        p.add(topRow,          BorderLayout.NORTH);
-        p.add(botRow,          BorderLayout.CENTER);
+        p.add(grid,            BorderLayout.CENTER);
         p.add(buildStartBtn(), BorderLayout.SOUTH);
         return p;
     }
@@ -71,30 +76,35 @@ public class CustomQuizPanel extends JPanel {
         JPanel card = cardPanel("出題比例（共 20 題）");
 
         vocabSlider = makeSlider(10);
-        fillSlider  = makeSlider(7);
-        wrongSlider = makeSlider(3);
+        fillSlider  = makeSlider(10);
         vocabVal    = valLabel("10");
-        fillVal     = valLabel("7");
-        wrongVal    = valLabel("3");
+        fillVal     = valLabel("10");
 
-        totalLabel = new JLabel("總計：10 + 7 + 3 = 20 題", SwingConstants.CENTER);
-        totalLabel.setFont(AppColors.FONT_SMALL);
-        totalLabel.setForeground(AppColors.TEXT_GREEN);
-        totalLabel.setBackground(new Color(0xFEF9E7));
-        totalLabel.setOpaque(true);
-        totalLabel.setBorder(new EmptyBorder(6, 10, 6, 10));
+        vocabSlider.addChangeListener(e -> {
+            if (adjusting) return;
+            adjusting = true;
+            int v = vocabSlider.getValue();
+            int f = 20 - v;
+            fillSlider.setValue(f);
+            vocabVal.setText(String.valueOf(v));
+            fillVal.setText(String.valueOf(f));
+            adjusting = false;
+        });
+        fillSlider.addChangeListener(e -> {
+            if (adjusting) return;
+            adjusting = true;
+            int f = fillSlider.getValue();
+            int v = 20 - f;
+            vocabSlider.setValue(v);
+            vocabVal.setText(String.valueOf(v));
+            fillVal.setText(String.valueOf(f));
+            adjusting = false;
+        });
 
-        javax.swing.event.ChangeListener cl = e -> updateTotal();
-        vocabSlider.addChangeListener(cl);
-        fillSlider .addChangeListener(cl);
-        wrongSlider.addChangeListener(cl);
-
-        JPanel body = new JPanel(new GridLayout(4, 1, 0, 10));
+        JPanel body = new JPanel(new GridLayout(2, 1, 0, 10));
         body.setOpaque(false);
         body.add(buildSliderRow("單字片語", vocabSlider, vocabVal));
         body.add(buildSliderRow("句子填空", fillSlider,  fillVal));
-        body.add(buildSliderRow("錯題複習", wrongSlider, wrongVal));
-        body.add(totalLabel);
 
         card.add(body, BorderLayout.CENTER);
         return card;
@@ -104,7 +114,7 @@ public class CustomQuizPanel extends JPanel {
         JPanel row = new JPanel(new BorderLayout(8, 0));
         row.setOpaque(false);
         JLabel lbl = new JLabel(label);
-        lbl.setFont(AppColors.FONT_BODY);
+        lbl.setFont(AppColors.FONT_HEAD);
         lbl.setPreferredSize(new Dimension(66, 20));
         row.add(lbl,    BorderLayout.WEST);
         row.add(slider, BorderLayout.CENTER);
@@ -112,55 +122,100 @@ public class CustomQuizPanel extends JPanel {
         return row;
     }
 
-    // ── 偏好設定卡 ────────────────────────────────────────────
+    // ── 偏好設定卡（單字範圍單選） ────────────────────────────────
     private JPanel buildPreferenceCard() {
         JPanel card = cardPanel("出題偏好設定");
 
-        weakToggle   = makeToggle("弱點優先模式", "自動提高熟悉度低的題目比例");
-        recentToggle = makeToggle("僅考近期錯題", "限最近 3 次測驗答錯的單字");
-        weakToggle.setSelected(true);
+        JLabel hint = new JLabel("選擇本次綜合練習的單字範圍");
+        hint.setFont(AppColors.FONT_SMALL);
+        hint.setForeground(AppColors.TEXT_SECONDARY);
+        hint.setBorder(new EmptyBorder(0, 0, 10, 0));
 
-        JLabel rTitle = new JLabel("錯題重出時機");
-        rTitle.setFont(AppColors.FONT_SMALL);
-        rTitle.setForeground(AppColors.TEXT_SECONDARY);
-        rTitle.setBorder(new EmptyBorder(4, 0, 4, 0));
+        poolLearnedBtn   = makePoolToggle("已學單字", "練習過的單字",     new Color(0x2E7D32), poolChoice == 0);
+        poolUnlearnedBtn = makePoolToggle("尚學單字", "尚未練習的單字",   new Color(0xC62828), poolChoice == 1);
+        poolWrongBtn     = makePoolToggle("錯誤單字", "曾答錯的單字",     new Color(0xE65100), poolChoice == 2);
+        poolRandomBtn    = makePoolToggle("隨機",     "從全部單字隨機出題", new Color(0xF9A825), poolChoice == 3);
 
         ButtonGroup bg = new ButtonGroup();
-        JRadioButton r1 = styledRadio("同回合立刻重出", true);
-        JRadioButton r2 = styledRadio("下次測驗才重出", false);
-        r1.setToolTipText("答錯後立即將該題插回題目佇列，本回合結束前會再出現");
-        r2.setToolTipText("答錯後記入下次測驗，本回合不重複，維持流暢節奏");
-        bg.add(r1); bg.add(r2);
+        bg.add(poolLearnedBtn);
+        bg.add(poolUnlearnedBtn);
+        bg.add(poolWrongBtn);
+        bg.add(poolRandomBtn);
 
-        JPanel body = new JPanel();
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        poolLearnedBtn.addActionListener(e   -> poolChoice = 0);
+        poolUnlearnedBtn.addActionListener(e -> poolChoice = 1);
+        poolWrongBtn.addActionListener(e     -> poolChoice = 2);
+        poolRandomBtn.addActionListener(e    -> poolChoice = 3);
+
+        JPanel grid2x2 = new JPanel(new GridLayout(2, 2, 8, 8));
+        grid2x2.setOpaque(false);
+        grid2x2.add(poolLearnedBtn);
+        grid2x2.add(poolUnlearnedBtn);
+        grid2x2.add(poolWrongBtn);
+        grid2x2.add(poolRandomBtn);
+
+        JPanel body = new JPanel(new BorderLayout(0, 8));
         body.setOpaque(false);
-        body.add(weakToggle);
-        body.add(Box.createVerticalStrut(8));
-        body.add(styledSeparator());
-        body.add(Box.createVerticalStrut(8));
-        body.add(recentToggle);
-        body.add(Box.createVerticalStrut(8));
-        body.add(styledSeparator());
-        body.add(Box.createVerticalStrut(8));
-        body.add(rTitle);
-        body.add(r1);
-        body.add(r2);
+        body.add(hint,    BorderLayout.NORTH);
+        body.add(grid2x2, BorderLayout.CENTER);
 
         card.add(body, BorderLayout.CENTER);
         return card;
+    }
+
+    private JToggleButton makePoolToggle(String title, String sub, Color accent, boolean selected) {
+        JToggleButton b = new JToggleButton(
+            "<html><b>" + title + "</b><br>"
+            + "<font color='gray'><small>" + sub + "</small></font></html>", selected) {
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(getBackground());
+                g.fillRect(0, 0, getWidth(), getHeight());
+                super.paintComponent(g);
+                if (isSelected()) {
+                    g.setColor(accent);
+                    g.fillRect(0, 0, 4, getHeight());
+                }
+            }
+        };
+        b.setContentAreaFilled(false);
+        b.setFont(AppColors.FONT_BODY);
+        b.setHorizontalAlignment(SwingConstants.LEFT);
+        b.setVerticalAlignment(SwingConstants.CENTER);
+        b.setOpaque(false);
+        b.setFocusPainted(false);
+        updatePoolToggleStyle(b, accent, selected);
+        b.addChangeListener(e -> updatePoolToggleStyle(b, accent, b.isSelected()));
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                if (b.isSelected()) b.setBackground(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 50));
+                else b.setBackground(new Color(0xF5EFE0));
+                b.repaint();
+            }
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                updatePoolToggleStyle(b, accent, b.isSelected());
+                b.repaint();
+            }
+        });
+        return b;
+    }
+
+    private void updatePoolToggleStyle(JToggleButton b, Color accent, boolean on) {
+        b.setBackground(on ? new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 25) : AppColors.BG_CARD);
+        b.setForeground(on ? accent : AppColors.TEXT_PRIMARY);
+        b.setBorder(new CompoundBorder(
+            new LineBorder(on ? accent : AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(8, 10, 8, 10)
+        ));
     }
 
     // ── 出題來源卡 ────────────────────────────────────────────
     // 固定來源的顏色對應
     private static final java.util.Map<String, Color> SOURCE_COLORS = new java.util.LinkedHashMap<>();
     static {
-        SOURCE_COLORS.put("全部單字",      new Color(0x5C6BC0)); // 靛藍
-        SOURCE_COLORS.put("TOEIC 多益單字", new Color(0x2E7D6E)); // 青綠
-        SOURCE_COLORS.put("Favorite 收藏", new Color(0xC62828)); // 紅
-        SOURCE_COLORS.put("錯誤單字",       new Color(0xE65100)); // 橘
+        SOURCE_COLORS.put("全部單字",       new Color(0x424242)); // 深灰
+        SOURCE_COLORS.put("TOEIC 多益單字", new Color(0x424242)); // 深灰
     }
-    private static final Color COL_COLOR = new Color(0x6D4C41); // 使用者群組：棕
+    private static final Color COL_COLOR = new Color(0x0D47A1); // 使用者群組：深藍
 
     private JPanel buildSourceCard() {
         JPanel card = cardPanel("出題來源");
@@ -263,10 +318,12 @@ public class CustomQuizPanel extends JPanel {
         JLabel hint = new JLabel("選擇要複習的熟悉度等級（可多選）");
         hint.setFont(AppColors.FONT_SMALL);
         hint.setForeground(AppColors.TEXT_SECONDARY);
-        hint.setBorder(new EmptyBorder(0, 0, 10, 0));
+        hint.setBorder(new EmptyBorder(0, 0, 4, 0));
 
         JPanel starRow = new JPanel(new GridLayout(1, 5, 8, 0));
         starRow.setOpaque(false);
+        starRow.setPreferredSize(new Dimension(0, 60));
+        starRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
         famBtns = new JToggleButton[5];
 
         for (int i = 0; i < 5; i++) {
@@ -294,14 +351,23 @@ public class CustomQuizPanel extends JPanel {
             btn.setForeground(AppColors.TEXT_PRIMARY);
             btn.setBorder(new CompoundBorder(
                 new LineBorder(famFilter[i] ? new Color(0x9A8A70) : AppColors.BORDER_SOFT, 2, true),
-                new EmptyBorder(10, 4, 10, 4)
+                new EmptyBorder(5, 4, 5, 4)
             ));
+            final Color lightI = FAM_LIGHT[i], deepI = FAM_DEEP[i];
+            btn.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                    if (!btn.isSelected()) btn.setBackground(UIUtils.brighter(lightI, 15));
+                }
+                @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                    if (!btn.isSelected()) btn.setBackground(lightI);
+                }
+            });
             btn.addActionListener(e -> {
                 famFilter[idx] = btn.isSelected();
                 btn.setBackground(btn.isSelected() ? FAM_DEEP[idx] : FAM_LIGHT[idx]);
                 btn.setBorder(new CompoundBorder(
                     new LineBorder(btn.isSelected() ? new Color(0x9A8A70) : AppColors.BORDER_SOFT, 2, true),
-                    new EmptyBorder(10, 4, 10, 4)
+                    new EmptyBorder(5, 4, 5, 4)
                 ));
             });
             famBtns[i] = btn;
@@ -318,6 +384,7 @@ public class CustomQuizPanel extends JPanel {
 
         JPanel quickRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         quickRow.setOpaque(false);
+        quickRow.setBorder(new EmptyBorder(0, -4, 0, 0)); // 對齊第一個星星方匡左緣
         quickRow.add(allBtn); quickRow.add(noneBtn); quickRow.add(lowBtn);
 
         JPanel body = new JPanel(new BorderLayout(0, 10));
@@ -337,7 +404,7 @@ public class CustomQuizPanel extends JPanel {
             famBtns[i].setBackground(vals[i] ? FAM_DEEP[i] : FAM_LIGHT[i]);
             famBtns[i].setBorder(new CompoundBorder(
                 new LineBorder(vals[i] ? new Color(0x9A8A70) : AppColors.BORDER_SOFT, 2, true),
-                new EmptyBorder(10, 4, 10, 4)
+                new EmptyBorder(5, 4, 5, 4)
             ));
         }
     }
@@ -349,10 +416,11 @@ public class CustomQuizPanel extends JPanel {
         b.setBackground(AppColors.BG_MAIN);
         b.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(3, 8, 3, 8)
+            new EmptyBorder(4, 10, 4, 10)
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BG_MAIN);
         return b;
     }
 
@@ -377,39 +445,87 @@ public class CustomQuizPanel extends JPanel {
         ));
         btn.setFocusPainted(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(btn, AppColors.BTN_PRIMARY);
         btn.addActionListener(e -> onStart());
         p.add(btn);
         return p;
     }
 
     // ── 互動邏輯 ──────────────────────────────────────────────
-    private void updateTotal() {
-        int v = vocabSlider.getValue();
-        int f = fillSlider.getValue();
-        int w = wrongSlider.getValue();
-        vocabVal.setText(String.valueOf(v));
-        fillVal .setText(String.valueOf(f));
-        wrongVal.setText(String.valueOf(w));
-
-        int total = v + f + w;
-        totalLabel.setText("總計：" + v + " + " + f + " + " + w + " = " + total + " 題");
-        totalLabel.setForeground(total == 20 ? AppColors.TEXT_GREEN : AppColors.TEXT_RED);
-
-    }
-
     private void onStart() {
         int v = vocabSlider.getValue();
         int f = fillSlider.getValue();
-        int w = wrongSlider.getValue();
-        boolean prioritize = weakToggle.isSelected();
-        boolean recentOnly = recentToggle.isSelected();
 
-        String modeDesc = prioritize ? "弱點優先模式" : "隨機模式";
+        // ── 驗證：取得來源單字 ────────────────────────────────
+        java.util.List<model.Vocabulary> sourceWords;
+        if (quizSource.equals("全部單字")) {
+            sourceWords = ctrl.getVocabList();
+        } else if (quizSource.equals("TOEIC 多益單字")) {
+            sourceWords = ctrl.getToeicWords();
+        } else {
+            model.VocabCollection col = ctrl.getCollections().stream()
+                .filter(c -> c.getName().equals(quizSource)).findFirst().orElse(null);
+            sourceWords = col != null ? ctrl.getCollectionWords(col) : java.util.Collections.emptyList();
+        }
+
+        if (sourceWords.isEmpty()) {
+            UIUtils.showMessage(this,
+                "「" + quizSource + "」目前沒有任何單字，請先新增單字！", "無單字");
+            return;
+        }
+
+        // ── 驗證：套 poolChoice 篩選 ──────────────────────────
+        java.util.List<model.Vocabulary> poolWords;
+        if (poolChoice == 3) {
+            poolWords = new java.util.ArrayList<>(sourceWords);
+        } else {
+            java.util.List<model.Vocabulary> src = sourceWords;
+            poolWords = src.stream().filter(w -> {
+                boolean learned   = w.getCorrectCount() > 0 || w.getWrongCount() > 0;
+                boolean unlearned = w.getCorrectCount() == 0 && w.getWrongCount() == 0;
+                boolean wrong     = w.getWrongCount() > 0;
+                return (poolChoice == 0 && learned)
+                    || (poolChoice == 1 && unlearned)
+                    || (poolChoice == 2 && wrong);
+            }).collect(java.util.stream.Collectors.toList());
+        }
+
+        String[] poolNames = {"已學單字", "尚學單字", "錯誤單字", "隨機"};
+        if (poolWords.isEmpty()) {
+            UIUtils.showMessage(this,
+                "「" + quizSource + "」在「" + poolNames[poolChoice] + "」條件下沒有符合的單字，請調整設定！",
+                "無單字");
+            return;
+        }
+
+        // ── 驗證：套熟悉度篩選 ────────────────────────────────
+        java.util.List<model.Vocabulary> famWords = poolWords.stream()
+            .filter(w -> famFilter[w.getFamiliarity() - 1])
+            .collect(java.util.stream.Collectors.toList());
+
+        if (famWords.isEmpty()) {
+            UIUtils.showMessage(this,
+                "所選熟悉度等級在目前條件下沒有符合的單字，請調整熟悉度篩選！",
+                "無單字");
+            return;
+        }
+
+        // ── 驗證：單字數是否足夠出題 ──────────────────────────
+        int total = v + f;
+        if (famWords.size() < total) {
+            UIUtils.showMessage(this,
+                "目前條件下只有 " + famWords.size() + " 個符合的單字，"
+                + "但需要出 " + total + " 題，請減少題數或調整篩選條件！",
+                "單字不足");
+            return;
+        }
+
+        // ── 確認並開始 ────────────────────────────────────────
         String msg = String.format(
-            "本次出題：單字片語 %d 題、句子填空 %d 題、錯題複習 %d 題\n出題來源：%s\n出題偏好：%s\n\n確認開始綜合測驗？",
-            v, f, w, quizSource, modeDesc);
+            "本次出題：單字片語 %d 題、句子填空 %d 題\n出題來源：%s\n單字範圍：%s\n\n確認開始綜合測驗？",
+            v, f, quizSource, poolNames[poolChoice]);
         if (UIUtils.showConfirm(this, msg, "客製化出題")) {
-            int[] settings = {v, f, w, prioritize ? 1 : 0, recentOnly ? 1 : 0};
+            int[] settings = {v, f, poolChoice};
             firePropertyChange("startCustomQuiz", (Object) null, settings);
         }
     }
@@ -529,8 +645,7 @@ public class CustomQuizPanel extends JPanel {
                 java.net.URL url = VolleyballSliderUI.class
                     .getResource("/resources/volleyball.png");
                 if (url != null) {
-                    BufferedImage raw = javax.imageio.ImageIO.read(url);
-                    volleyballImg = scaleHighQuality(raw, 64, 44);
+                    volleyballImg = javax.imageio.ImageIO.read(url);
                 }
             } catch (Exception e) {
                 volleyballImg = null;
@@ -564,7 +679,7 @@ public class CustomQuizPanel extends JPanel {
         VolleyballSliderUI(JSlider b) { super(b); }
 
         @Override
-        protected Dimension getThumbSize() { return new Dimension(54, 40); }
+        protected Dimension getThumbSize() { return new Dimension(44, 44); }
 
         @Override public void paintFocus(Graphics g) {}
 

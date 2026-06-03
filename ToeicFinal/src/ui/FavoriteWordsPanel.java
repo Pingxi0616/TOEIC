@@ -38,9 +38,19 @@ public class FavoriteWordsPanel extends JPanel {
 
         JButton backBtn = buildBackBtn();
 
-        JLabel title = new JLabel("Favorite 單字區");
-        title.setFont(AppColors.FONT_TITLE);
-        title.setForeground(AppColors.TEXT_RED);
+        JLabel iconLbl = new JLabel("♥");
+        iconLbl.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 22));
+        iconLbl.setForeground(AppColors.TEXT_RED);
+
+        JLabel titleLbl = new JLabel(" Favorite 單字區");
+        titleLbl.setFont(AppColors.FONT_TITLE);
+        titleLbl.setForeground(AppColors.TEXT_RED);
+
+        JPanel title = new JPanel();
+        title.setLayout(new BoxLayout(title, BoxLayout.X_AXIS));
+        title.setOpaque(false);
+        title.add(iconLbl);
+        title.add(titleLbl);
 
         p.add(title,    BorderLayout.WEST);
         p.add(backBtn,  BorderLayout.EAST);
@@ -48,16 +58,17 @@ public class FavoriteWordsPanel extends JPanel {
     }
 
     private JButton buildBackBtn() {
-        JButton b = new JButton("返回主頁 →");
-        b.setFont(AppColors.FONT_SMALL);
+        JButton b = new JButton("返回主頁");
+        b.setFont(AppColors.FONT_BTN);
         b.setForeground(AppColors.TEXT_SECONDARY);
         b.setBackground(AppColors.BG_MAIN);
         b.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(4, 10, 4, 10)
+            new EmptyBorder(8, 16, 8, 16)
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BG_CARD);
         b.addActionListener(e -> onBack.run());
         return b;
     }
@@ -111,7 +122,7 @@ public class FavoriteWordsPanel extends JPanel {
                 WordCardPopup.show(FavoriteWordsPanel.this, v);
             }
             @Override public void mouseEntered(java.awt.event.MouseEvent e) {
-                row.setBackground(new Color(0xF0E8D8));
+                row.setBackground(new Color(0xD3E2DA));
             }
             @Override public void mouseExited(java.awt.event.MouseEvent e) {
                 row.setBackground(AppColors.BG_CARD);
@@ -128,6 +139,14 @@ public class FavoriteWordsPanel extends JPanel {
         ));
         unfavBtn.setFocusPainted(false);
         unfavBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        unfavBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                unfavBtn.setBackground(new Color(0xFFEBEB));
+            }
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                unfavBtn.setBackground(AppColors.BG_CARD);
+            }
+        });
         unfavBtn.addActionListener(e -> {
             ctrl.toggleFavorite(v, false);
             refresh();
