@@ -39,9 +39,19 @@ public class WrongWordsPanel extends JPanel {
 
         JButton backBtn = buildBackBtn();
 
-        JLabel title = new JLabel("錯誤單字區");
-        title.setFont(AppColors.FONT_TITLE);
-        title.setForeground(new Color(0xF9A825));
+        JLabel iconLbl = new JLabel("✗");
+        iconLbl.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 22));
+        iconLbl.setForeground(new Color(0xE65100));
+
+        JLabel titleLbl = new JLabel(" 錯誤單字區");
+        titleLbl.setFont(AppColors.FONT_TITLE);
+        titleLbl.setForeground(new Color(0xE65100));
+
+        JPanel title = new JPanel();
+        title.setLayout(new BoxLayout(title, BoxLayout.X_AXIS));
+        title.setOpaque(false);
+        title.add(iconLbl);
+        title.add(titleLbl);
 
         JLabel hint = new JLabel("依答錯次數排序");
         hint.setFont(AppColors.FONT_SMALL);
@@ -60,16 +70,17 @@ public class WrongWordsPanel extends JPanel {
     }
 
     private JButton buildBackBtn() {
-        JButton b = new JButton("返回主頁 →");
-        b.setFont(AppColors.FONT_SMALL);
+        JButton b = new JButton("返回主頁");
+        b.setFont(AppColors.FONT_BTN);
         b.setForeground(AppColors.TEXT_SECONDARY);
         b.setBackground(AppColors.BG_MAIN);
         b.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(4, 10, 4, 10)
+            new EmptyBorder(8, 16, 8, 16)
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BG_CARD);
         b.addActionListener(e -> onBack.run());
         return b;
     }
@@ -123,7 +134,7 @@ public class WrongWordsPanel extends JPanel {
                 WordCardPopup.show(WrongWordsPanel.this, v);
             }
             @Override public void mouseEntered(java.awt.event.MouseEvent e) {
-                row.setBackground(new Color(0xF0E8D8));
+                row.setBackground(new Color(0xD3E2DA));
             }
             @Override public void mouseExited(java.awt.event.MouseEvent e) {
                 row.setBackground(AppColors.BG_CARD);

@@ -22,13 +22,13 @@ public final class QuizResultDialog {
         JPanel root = new JPanel(new BorderLayout(0, 16));
         root.setBackground(AppColors.BG_MAIN);
         root.setBorder(new CompoundBorder(
-            new LineBorder(AppColors.BORDER_SOFT, 1),
+            new LineBorder(AppColors.BORDER, 2),
             new EmptyBorder(26, 34, 20, 34)
         ));
 
         // ── 標題 ────────────────────────────────────────────────
         JLabel titleLbl = new JLabel(quizName + " 完成！");
-        titleLbl.setFont(AppColors.FONT_TITLE);
+        titleLbl.setFont(AppColors.FONT_HEAD);   // FONT_TITLE(22) → FONT_HEAD(15)
         titleLbl.setForeground(AppColors.TEXT_PRIMARY);
         titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
 
@@ -38,7 +38,7 @@ public final class QuizResultDialog {
             String.format("答對 %d / %d 題　正確率 %.0f%%", correct, total, pct),
             SwingConstants.LEFT
         );
-        scoreLbl.setFont(AppColors.FONT_BODY);
+        scoreLbl.setFont(AppColors.FONT_SMALL);  // FONT_BODY(13) → FONT_SMALL(11)
         scoreLbl.setForeground(AppColors.TEXT_SECONDARY);
 
         // ── 完成按鈕 ────────────────────────────────────────────

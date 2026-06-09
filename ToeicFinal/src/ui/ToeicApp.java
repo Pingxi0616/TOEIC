@@ -62,13 +62,15 @@ public class ToeicApp extends JFrame {
         sb.setBackground(AppColors.BG_SIDEBAR);
         sb.setBorder(new MatteBorder(0,0,0,1, new Color(0xB8A888)));
 
-        JPanel logo = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 18));
+        JPanel logo = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 18));
         logo.setBackground(AppColors.BG_SIDEBAR);
-        logo.setBorder(new MatteBorder(0,0,1,0, new Color(0xB8A888)));
-        JLabel sq = new JLabel("  ");
-        sq.setBackground(AppColors.TEXT_PRIMARY);
-        sq.setOpaque(true);
-        sq.setPreferredSize(new Dimension(28, 28));
+        logo.setBorder(new CompoundBorder(
+            new MatteBorder(0,0,1,0, new Color(0xB8A888)),
+            new EmptyBorder(0, 18, 0, 0)
+        ));
+        JLabel sq = new JLabel("🏐");
+        sq.setFont(new Font("Apple Color Emoji", Font.PLAIN, 28));
+        sq.setPreferredSize(new Dimension(36, 36));
         JLabel appName = new JLabel("<html><b>TOEIC 練習</b><br>"
             + "<font color='gray' size='2'>多益單字學習系統</font></html>");
         appName.setFont(AppColors.FONT_HEAD);
@@ -147,11 +149,17 @@ public class ToeicApp extends JFrame {
             int[] settings  = (int[]) evt.getNewValue();
             int vocabCount  = settings[0];
             int fillCount   = settings[1];
-            int wrongCount  = settings[2];
-            boolean weak    = settings[3] == 1;
+            int poolChoice  = settings[2]; // 0=已學 1=尚學 2=錯誤
 
+            java.util.List<model.Vocabulary> pool = (poolChoice == 3)
+                ? ctrl.getVocabList()
+                : ctrl.buildCustomPool(
+                    poolChoice == 2, // inclWrong
+                    poolChoice == 0, // inclLearned
+                    poolChoice == 1  // inclUnlearned
+                  );
             List<QuizItem> items = ctrl.getQuizManager()
-                .generateMixedQuiz(vocabCount, fillCount, wrongCount, weak);
+                .generateMixedQuiz(vocabCount, fillCount, pool);
             mixedPanel.startQuiz(items);
             showMixed();
         });

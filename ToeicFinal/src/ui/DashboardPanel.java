@@ -70,11 +70,25 @@ public class DashboardPanel extends JPanel {
 
         // 單字卡來源選擇器
         sourceCombo = new JComboBox<>();
-        sourceCombo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI());
+        sourceCombo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI() {
+            @Override protected JButton createArrowButton() {
+                JButton btn = new JButton("▾");
+                btn.setFont(new Font("SansSerif", Font.PLAIN, 10));
+                btn.setBackground(AppColors.BG_CARD);
+                btn.setForeground(AppColors.TEXT_SECONDARY);
+                btn.setBorder(new MatteBorder(0, 1, 0, 0, AppColors.BORDER_SOFT));
+                btn.setFocusPainted(false);
+                btn.setOpaque(true);
+                return btn;
+            }
+        });
         sourceCombo.setFont(AppColors.FONT_SMALL);
-        sourceCombo.setBackground(AppColors.BG_MAIN);
+        sourceCombo.setBackground(AppColors.BG_CARD);
         sourceCombo.setForeground(AppColors.TEXT_PRIMARY);
-        sourceCombo.setBorder(new EmptyBorder(2, 6, 2, 6));
+        sourceCombo.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(3, 8, 3, 4)
+        ));
         sourceCombo.setFocusable(false);
         sourceCombo.setToolTipText("選擇單字卡顯示的單字庫");
         sourceCombo.setRenderer(new javax.swing.DefaultListCellRenderer() {
@@ -86,13 +100,9 @@ public class DashboardPanel extends JPanel {
                         list, value, index, isSelected, cellHasFocus);
                 lbl.setFont(AppColors.FONT_SMALL);
                 lbl.setBorder(new EmptyBorder(5, 10, 5, 10));
-                if (isSelected) {
-                    lbl.setBackground(AppColors.BG_SIDEBAR);
-                    lbl.setForeground(AppColors.TEXT_PRIMARY);
-                } else {
-                    lbl.setBackground(AppColors.BG_MAIN);
-                    lbl.setForeground(AppColors.TEXT_PRIMARY);
-                }
+                lbl.setOpaque(true);
+                lbl.setBackground(isSelected ? AppColors.BG_SIDEBAR : AppColors.BG_MAIN);
+                lbl.setForeground(AppColors.TEXT_PRIMARY);
                 return lbl;
             }
         });
@@ -175,6 +185,7 @@ public class DashboardPanel extends JPanel {
 
         JPanel mid = new JPanel(new GridLayout(2, 1, 0, 2));
         mid.setOpaque(false);
+        mid.setBorder(new EmptyBorder(10, 0, 0, 0));
         mid.add(cntLabel);
         mid.add(unitLbl);
 
@@ -216,11 +227,11 @@ public class DashboardPanel extends JPanel {
         });
 
         cardPosLabel = new JLabel("", SwingConstants.CENTER);
-        cardPosLabel.setFont(new Font("Microsoft JhengHei", Font.ITALIC, 15));
+        cardPosLabel.setFont(new Font("Microsoft JhengHei", Font.ITALIC, 19));
         cardPosLabel.setForeground(AppColors.TEXT_SECONDARY);
 
         cardMeaningLabel = new JLabel("點擊顯示中文", SwingConstants.CENTER);
-        cardMeaningLabel.setFont(new Font("Microsoft JhengHei", Font.PLAIN, 22));
+        cardMeaningLabel.setFont(new Font("Microsoft JhengHei", Font.PLAIN, 20));
         cardMeaningLabel.setForeground(AppColors.TEXT_SECONDARY);
 
         cardIndexLabel = new JLabel("", SwingConstants.CENTER);
@@ -243,10 +254,11 @@ public class DashboardPanel extends JPanel {
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         btnRow.setOpaque(false);
 
-        JButton prevBtn = navBtn("←");
-        JButton nextBtn = navBtn("→");
-        heartBtn = iconBtn("♡");
-        colBtn   = iconBtn("＋");
+        JButton prevBtn    = navBtn("←");
+        JButton nextBtn    = navBtn("→");
+        heartBtn           = iconBtn("♡");
+        heartBtn.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 15));
+        colBtn             = iconBtn("＋");
         colBtn.setToolTipText("加入群組資料夾");
         JButton pronounceBtn = iconBtn("🔊");
         pronounceBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
@@ -262,6 +274,20 @@ public class DashboardPanel extends JPanel {
         btnRow.add(pronounceBtn);
         btnRow.add(colBtn);
         btnRow.add(nextBtn);
+
+        // 所有按鈕排版後統一高度（以 prevBtn 自然高度為基準）
+        final JButton[] allBtns = {prevBtn, heartBtn, pronounceBtn, colBtn, nextBtn};
+        SwingUtilities.invokeLater(() -> {
+            int h = prevBtn.getPreferredSize().height;
+            for (JButton b : allBtns) {
+                Dimension d = new Dimension(b.getPreferredSize().width, h);
+                b.setMinimumSize(d);
+                b.setPreferredSize(d);
+                b.setMaximumSize(d);
+            }
+            btnRow.revalidate();
+            btnRow.repaint();
+        });
 
         outer.add(card,   BorderLayout.CENTER);
         outer.add(btnRow, BorderLayout.SOUTH);
@@ -285,6 +311,7 @@ public class DashboardPanel extends JPanel {
         cardIndexLabel.setText((cardIndex + 1) + " / " + cardWords.size()
             + "   " + v.getFamiliarityStars());
         heartBtn.setText(v.isFavorite() ? "♥" : "♡");
+        heartBtn.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 15));
         heartBtn.setForeground(v.isFavorite() ? AppColors.TEXT_RED : AppColors.TEXT_SECONDARY);
     }
 
@@ -306,6 +333,7 @@ public class DashboardPanel extends JPanel {
         Vocabulary v = cardWords.get(cardIndex);
         ctrl.toggleFavorite(v, !v.isFavorite());
         heartBtn.setText(v.isFavorite() ? "♥" : "♡");
+        heartBtn.setFont(new Font("Segoe UI Symbol", Font.PLAIN, 15));
         heartBtn.setForeground(v.isFavorite() ? AppColors.TEXT_RED : AppColors.TEXT_SECONDARY);
         favCountLabel.setText(String.valueOf(ctrl.getFavoriteWords().size()));
     }
@@ -336,11 +364,11 @@ public class DashboardPanel extends JPanel {
         String prevSel = sourceCombo.getSelectedItem() != null
                          ? sourceCombo.getSelectedItem().toString() : null;
         sourceCombo.removeAllItems();
-        sourceCombo.addItem("今日待複習");
         sourceCombo.addItem("全部單字");
-        sourceCombo.addItem("TOEIC 多益單字");
-        sourceCombo.addItem("Favorite 收藏");
+        sourceCombo.addItem("已學單字");
+        sourceCombo.addItem("尚學單字");
         sourceCombo.addItem("錯誤單字");
+        sourceCombo.addItem("TOEIC 多益單字");
         for (VocabCollection col : ctrl.getCollections()) {
             sourceCombo.addItem(col.getName());
         }
@@ -354,27 +382,26 @@ public class DashboardPanel extends JPanel {
     private void updateCardSource() {
         if (sourceCombo == null) return;
         String sel = sourceCombo.getSelectedItem() != null
-                     ? sourceCombo.getSelectedItem().toString() : "今日待複習";
+                     ? sourceCombo.getSelectedItem().toString() : "全部單字";
         List<Vocabulary> words;
         if (sel.equals("全部單字")) {
             words = ctrl.getVocabList();
-        } else if (sel.equals("TOEIC 多益單字")) {
-            words = ctrl.getToeicWords();
-        } else if (sel.equals("Favorite 收藏")) {
-            words = ctrl.getFavoriteWords();
+        } else if (sel.equals("已學單字")) {
+            words = ctrl.getVocabList().stream()
+                .filter(v -> v.getCorrectCount() > 0 || v.getWrongCount() > 0)
+                .collect(java.util.stream.Collectors.toList());
+        } else if (sel.equals("尚學單字")) {
+            words = ctrl.getVocabList().stream()
+                .filter(v -> v.getCorrectCount() == 0 && v.getWrongCount() == 0)
+                .collect(java.util.stream.Collectors.toList());
         } else if (sel.equals("錯誤單字")) {
             words = ctrl.getWrongWords();
+        } else if (sel.equals("TOEIC 多益單字")) {
+            words = ctrl.getToeicWords();
         } else {
-            // 先比對 collection 名稱
             VocabCollection col = ctrl.getCollections().stream()
                 .filter(c -> c.getName().equals(sel)).findFirst().orElse(null);
-            if (col != null) {
-                words = ctrl.getCollectionWords(col);
-            } else {
-                // 今日待複習（預設）
-                List<Vocabulary> today = ctrl.getTodayWords();
-                words = today.isEmpty() ? ctrl.getVocabList() : today;
-            }
+            words = col != null ? ctrl.getCollectionWords(col) : ctrl.getVocabList();
         }
         cardWords = words.isEmpty() ? ctrl.getVocabList() : words;
         if (cardIndex >= cardWords.size()) cardIndex = 0;
@@ -416,12 +443,13 @@ public class DashboardPanel extends JPanel {
     }
     private JButton navBtn(String text) {
         JButton b = new JButton(text);
-        b.setFont(new Font("Serif", Font.BOLD, 20));
+        b.setFont(new Font("Serif", Font.PLAIN, 18));
         b.setBackground(AppColors.BG_CARD);
         b.setForeground(AppColors.TEXT_PRIMARY);
-        b.setBorder(new CompoundBorder(new LineBorder(AppColors.BORDER,1,true), new EmptyBorder(6,18,6,18)));
+        b.setBorder(new CompoundBorder(new LineBorder(AppColors.BORDER_SOFT,1,true), new EmptyBorder(6,18,6,18)));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BG_CARD);
         return b;
     }
     private JButton iconBtn(String text) {
@@ -432,6 +460,7 @@ public class DashboardPanel extends JPanel {
         b.setBorder(new CompoundBorder(new LineBorder(AppColors.BORDER_SOFT,1,true), new EmptyBorder(6,12,6,12)));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BG_CARD);
         return b;
     }
 
@@ -465,43 +494,139 @@ public class DashboardPanel extends JPanel {
         msgLbl.setFont(AppColors.FONT_BODY);
         msgLbl.setForeground(AppColors.TEXT_SECONDARY);
 
-        // 下拉選單
-        String[] names = cols.stream()
-            .map(c -> c.getName() + " (" + c.getWords().size() + " 個)")
-            .toArray(String[]::new);
-        JComboBox<String> combo = new JComboBox<>(names);
+        // 下拉選單（只顯示群組名稱，不加括號）
+        java.util.function.Supplier<String[]> buildNames = () ->
+            ctrl.getCollections().stream().map(VocabCollection::getName).toArray(String[]::new);
+        JComboBox<String> combo = new JComboBox<>(buildNames.get());
+        combo.setUI(new javax.swing.plaf.basic.BasicComboBoxUI());
         combo.setFont(AppColors.FONT_BODY);
         combo.setBackground(AppColors.BG_CARD);
         combo.setForeground(AppColors.TEXT_PRIMARY);
         combo.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(4, 8, 4, 8)
+            new EmptyBorder(6, 10, 6, 10)
         ));
+        combo.setRenderer(new javax.swing.DefaultListCellRenderer() {
+            @Override public java.awt.Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel lbl = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                lbl.setFont(AppColors.FONT_BODY);
+                lbl.setBorder(new EmptyBorder(6, 10, 6, 10));
+                lbl.setOpaque(true);
+                lbl.setBackground(isSelected ? AppColors.BG_SIDEBAR : AppColors.BG_CARD);
+                lbl.setForeground(AppColors.TEXT_PRIMARY);
+                return lbl;
+            }
+        });
 
-        JPanel centerPanel = new JPanel(new BorderLayout(0, 10));
+        combo.setMaximumSize(new Dimension(Integer.MAX_VALUE, combo.getPreferredSize().height));
+
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
         centerPanel.setOpaque(false);
-        centerPanel.add(msgLbl, BorderLayout.NORTH);
-        centerPanel.add(combo,  BorderLayout.CENTER);
+        msgLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        combo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        centerPanel.add(msgLbl);
+        centerPanel.add(Box.createVerticalStrut(10));
+        centerPanel.add(combo);
 
         // 按鈕
         int[] result = {-1};
-        JButton cancel = styledDlgBtn("取消", AppColors.TEXT_SECONDARY, AppColors.BG_MAIN);
+        JButton newGroupBtn = styledDlgBtn("＋ 新增群組", AppColors.BG_CARD, AppColors.TEXT_SECONDARY);
+        newGroupBtn.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(5, 14, 5, 14)
+        ));
+        newGroupBtn.addActionListener(e -> {
+            JDialog newDlg = new JDialog(dlg, Dialog.ModalityType.APPLICATION_MODAL);
+            newDlg.setUndecorated(true);
+
+            JPanel newRoot = new JPanel(new BorderLayout(0, 12));
+            newRoot.setBackground(AppColors.BG_MAIN);
+            newRoot.setBorder(new CompoundBorder(
+                new LineBorder(AppColors.BORDER, 2),
+                new EmptyBorder(22, 26, 18, 26)
+            ));
+
+            JLabel newTitle = new JLabel("新增群組");
+            newTitle.setFont(AppColors.FONT_HEAD);
+            newTitle.setForeground(AppColors.TEXT_PRIMARY);
+            newTitle.setBorder(new EmptyBorder(0, 0, 4, 0));
+
+            JLabel nameLbl = new JLabel("群組名稱：");
+            nameLbl.setFont(AppColors.FONT_BODY);
+            nameLbl.setForeground(AppColors.TEXT_SECONDARY);
+
+            JTextField nameField = new JTextField();
+            nameField.setFont(AppColors.FONT_BODY);
+            nameField.setBackground(AppColors.BG_CARD);
+            nameField.setBorder(new CompoundBorder(
+                new LineBorder(AppColors.BORDER_SOFT, 1, true),
+                new EmptyBorder(6, 8, 6, 8)
+            ));
+
+            nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, nameField.getPreferredSize().height));
+
+            JPanel fieldPanel = new JPanel();
+            fieldPanel.setLayout(new BoxLayout(fieldPanel, BoxLayout.Y_AXIS));
+            fieldPanel.setOpaque(false);
+            nameLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+            nameField.setAlignmentX(Component.LEFT_ALIGNMENT);
+            fieldPanel.add(nameLbl);
+            fieldPanel.add(Box.createVerticalStrut(6));
+            fieldPanel.add(nameField);
+
+            JButton cancelNew = styledDlgBtn("取消", new Color(0x9E8272), Color.WHITE);
+            JButton okNew     = styledDlgBtn("確認建立", AppColors.BTN_PRIMARY,    Color.WHITE);
+            cancelNew.addActionListener(ev -> newDlg.dispose());
+            okNew.addActionListener(ev -> {
+                String name = nameField.getText().trim();
+                if (!name.isEmpty()) {
+                    ctrl.addCollection(new VocabCollection(name));
+                    combo.addItem(name);
+                    combo.setSelectedIndex(combo.getItemCount() - 1);
+                }
+                newDlg.dispose();
+            });
+            nameField.addActionListener(ev -> okNew.doClick());
+
+            JPanel newBtnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+            newBtnRow.setOpaque(false);
+            newBtnRow.add(cancelNew);
+            newBtnRow.add(okNew);
+
+            newRoot.add(newTitle,    BorderLayout.NORTH);
+            newRoot.add(fieldPanel,  BorderLayout.CENTER);
+            newRoot.add(newBtnRow,   BorderLayout.SOUTH);
+
+            newDlg.setContentPane(newRoot);
+            newDlg.setSize(300, 210);
+            newDlg.setLocationRelativeTo(dlg);
+            newDlg.setVisible(true);
+        });
+        JButton cancel = styledDlgBtn("取消", new Color(0x9E8272), Color.WHITE);
         JButton ok     = styledDlgBtn("確定", AppColors.BTN_PRIMARY, Color.WHITE);
         cancel.addActionListener(e -> dlg.dispose());
         ok.addActionListener(e -> { result[0] = combo.getSelectedIndex(); dlg.dispose(); });
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel btnRow = new JPanel(new BorderLayout());
         btnRow.setOpaque(false);
-        btnRow.add(cancel);
-        btnRow.add(ok);
+        JPanel leftBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        leftBtns.setOpaque(false);
+        leftBtns.add(newGroupBtn);
+        JPanel rightBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        rightBtns.setOpaque(false);
+        rightBtns.add(cancel);
+        rightBtns.add(ok);
+        btnRow.add(leftBtns,  BorderLayout.WEST);
+        btnRow.add(rightBtns, BorderLayout.EAST);
 
         root.add(titleLbl,    BorderLayout.NORTH);
         root.add(centerPanel, BorderLayout.CENTER);
         root.add(btnRow,      BorderLayout.SOUTH);
 
         dlg.setContentPane(root);
-        dlg.pack();
-        dlg.setMinimumSize(new Dimension(300, dlg.getHeight()));
+        dlg.setSize(300, 210);
         dlg.setLocationRelativeTo(this);
         dlg.setVisible(true);
 
@@ -526,6 +651,7 @@ public class DashboardPanel extends JPanel {
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, bg);
         return b;
     }
 }

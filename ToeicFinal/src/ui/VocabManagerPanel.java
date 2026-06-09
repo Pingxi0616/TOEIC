@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
+import java.awt.Dialog;
 import java.awt.event.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -61,26 +62,48 @@ public class VocabManagerPanel extends JPanel {
             @Override public void keyReleased(KeyEvent e) { filterTable(searchField.getText()); }
         });
 
-        JButton btnAdd     = accentBtn("＋ 新增單字");
-        JButton btnWrong   = sBtn("查看錯題本");
-        JButton btnRefresh = sBtn("重新整理");
-        btnRefresh.setToolTipText("清除搜尋並重新從資料庫載入（可復原未儲存的操作錯誤）");
+        JButton btnAdd      = accentBtn("＋ 新增單字");
+        JButton btnWrong    = sBtn("查看錯題本");
+        JButton btnResetErr = sBtn("重置錯題本");
+        btnResetErr.setToolTipText("清空所有單字的錯誤記錄，重新開始計算");
 
         btnAdd.addActionListener(e -> showAddWordDialog());
         btnWrong.addActionListener(e -> showWrongWords());
-        btnRefresh.addActionListener(e -> {
-            searchField.setText("");
-            selectedFolder = FOLDER_ALL;
-            ctrl.reload();   // 從 JSON 重新載入
+        btnResetErr.addActionListener(e -> {
+            if (!UIUtils.showConfirm(this, "確定要清空所有錯誤記錄嗎？\n此操作無法復原。", "重置錯題本")) return;
+            ctrl.getVocabList().forEach(v -> v.setWrongCount(0));
+            ctrl.save();
             refresh();
+            UIUtils.showMessage(this, "已清空所有錯誤記錄！", "重置完成");
         });
 
         right.add(searchField);
         right.add(btnAdd);
         right.add(btnWrong);
-        right.add(btnRefresh);
+        right.add(btnResetErr);
 
-        p.add(title, BorderLayout.WEST);
+        SwingUtilities.invokeLater(() -> {
+            int h = Math.max(
+                btnAdd.getPreferredSize().height,
+                searchField.getPreferredSize().height
+            );
+            Dimension sf = searchField.getPreferredSize();
+            searchField.setPreferredSize(new Dimension(sf.width, h));
+            searchField.setMinimumSize(new Dimension(sf.width, h));
+            searchField.setMaximumSize(new Dimension(sf.width, h));
+            for (JButton b : new JButton[]{btnAdd, btnWrong, btnResetErr}) {
+                Dimension pd = b.getPreferredSize();
+                b.setPreferredSize(new Dimension(pd.width, h));
+                b.setMinimumSize(new Dimension(pd.width, h));
+                b.setMaximumSize(new Dimension(pd.width, h));
+            }
+            right.revalidate();
+        });
+
+        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        west.setOpaque(false);
+        west.add(title);
+        p.add(west,  BorderLayout.WEST);
         p.add(right, BorderLayout.EAST);
         return p;
     }
@@ -89,6 +112,7 @@ public class VocabManagerPanel extends JPanel {
     private JPanel buildContent() {
         JPanel container = new JPanel(new BorderLayout(12, 0));
         container.setOpaque(false);
+        container.setBorder(new EmptyBorder(0, 6, 0, 0));
         container.add(buildFolderPanel(), BorderLayout.WEST);
         container.add(buildTableCard(),   BorderLayout.CENTER);
         return container;
@@ -121,7 +145,7 @@ public class VocabManagerPanel extends JPanel {
         scroll.getViewport().setOpaque(false);
 
         JButton addFolderBtn = new JButton("＋ 新增資料夾");
-        addFolderBtn.setFont(AppColors.FONT_SMALL);
+        addFolderBtn.setFont(AppColors.FONT_BODY);
         addFolderBtn.setBackground(AppColors.BG_SIDEBAR);
         addFolderBtn.setForeground(AppColors.TEXT_PRIMARY);
         addFolderBtn.setBorder(new CompoundBorder(
@@ -131,6 +155,10 @@ public class VocabManagerPanel extends JPanel {
         addFolderBtn.setFocusPainted(false);
         addFolderBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         addFolderBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        addFolderBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) { addFolderBtn.setBackground(AppColors.BG_MAIN); }
+            @Override public void mouseExited (java.awt.event.MouseEvent e) { addFolderBtn.setBackground(AppColors.BG_SIDEBAR); }
+        });
         addFolderBtn.addActionListener(e -> showAddCollectionDialog());
 
         outer.add(lbl,          BorderLayout.NORTH);
@@ -168,9 +196,9 @@ public class VocabManagerPanel extends JPanel {
             && !FOLDER_ALL.equals(colName) && !FOLDER_TOEIC.equals(colName);
 
         JButton b = new JButton(text);
-        b.setFont(AppColors.FONT_SMALL);
+        b.setFont(AppColors.FONT_BODY);
         b.setHorizontalAlignment(SwingConstants.LEFT);
-        b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        b.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b.setBackground(selected ? AppColors.BG_SELECTED : AppColors.BG_CARD);
@@ -218,11 +246,7 @@ public class VocabManagerPanel extends JPanel {
                     deleteItem.setOpaque(true);
                     deleteItem.addActionListener(ev -> deleteCollection(name));
 
-                    JSeparator sep = new JSeparator();
-                    sep.setForeground(AppColors.BORDER_SOFT);
-                    sep.setBackground(AppColors.BG_CARD);
                     menu.add(renameItem);
-                    menu.add(sep);
                     menu.add(deleteItem);
                     menu.show(b, e.getX(), e.getY());
                 }
@@ -279,25 +303,22 @@ public class VocabManagerPanel extends JPanel {
             new EmptyBorder(16, 16, 16, 16)
         ));
 
-        JPanel statRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 18, 0));
+        JPanel statRow = new JPanel(new BorderLayout());
         statRow.setOpaque(false);
-        totalLabel = new JLabel();
-        wrongLabel = new JLabel();
-        totalLabel.setFont(AppColors.FONT_BODY);
-        wrongLabel.setFont(AppColors.FONT_BODY);
-        wrongLabel.setForeground(AppColors.TEXT_RED);
-        statRow.add(totalLabel);
-        statRow.add(new JLabel(" | "));
-        statRow.add(wrongLabel);
 
-        // 右鍵提示
+        totalLabel = new JLabel();
+        wrongLabel = new JLabel(); // 保留欄位但不顯示
+        totalLabel.setFont(AppColors.FONT_BODY);
+
         JLabel hint = new JLabel("右鍵單字列可編輯／刪除");
         hint.setFont(AppColors.FONT_SMALL);
         hint.setForeground(AppColors.TEXT_SECONDARY);
-        statRow.add(Box.createHorizontalStrut(20));
-        statRow.add(hint);
+        hint.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        String[] cols = {"單字","詞性","詞義","熟悉度","答對","答錯","下次複習"};
+        statRow.add(totalLabel, BorderLayout.WEST);
+        statRow.add(hint,       BorderLayout.EAST);
+
+        String[] cols = {"單字","詞性","詞義","答對","答錯","熟悉度"};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -305,14 +326,35 @@ public class VocabManagerPanel extends JPanel {
         table.setFont(AppColors.FONT_BODY);
         table.setRowHeight(26);
         table.setGridColor(new Color(0xE8E8E8));
-        table.setSelectionBackground(new Color(0xD8EED8));
+        table.setSelectionBackground(new Color(168, 200, 192, 128));
+        table.setSelectionForeground(AppColors.TEXT_PRIMARY);
         table.getTableHeader().setFont(AppColors.FONT_BODY);
         table.getTableHeader().setBackground(new Color(0xF0E8D8));
-        table.setAutoCreateRowSorter(true);
+        table.getTableHeader().setReorderingAllowed(false);
+        javax.swing.table.TableRowSorter<DefaultTableModel> sorter =
+            new javax.swing.table.TableRowSorter<>(tableModel);
+        // 只有「單字」(0) 和「熟悉度」(5) 可排序
+        for (int i = 0; i < cols.length; i++)
+            sorter.setSortable(i, i == 0 || i == 5);
+        table.setRowSorter(sorter);
 
-        int[] widths = {110, 60, 150, 90, 50, 50, 100};
+        int[] widths = {110, 60, 180, 50, 50, 90};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+
+        // 所有欄位加左 padding
+        javax.swing.table.DefaultTableCellRenderer paddedLeft =
+            new javax.swing.table.DefaultTableCellRenderer();
+        paddedLeft.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 0));
+        // 單字、詞性、詞義 欄：左對齊小距離
+        for (int i = 0; i < 3; i++)
+            table.getColumnModel().getColumn(i).setCellRenderer(paddedLeft);
+        // 答對、答錯、熟悉度 欄：置中
+        javax.swing.table.DefaultTableCellRenderer centerRenderer =
+            new javax.swing.table.DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 3; i < cols.length; i++)
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
 
         // ── 右鍵選單（編輯 / 刪除） ──
         table.addMouseListener(new MouseAdapter() {
@@ -343,14 +385,26 @@ public class VocabManagerPanel extends JPanel {
     // ── 右鍵彈出選單 ──────────────────────────────────────────
     private void showRowPopup(MouseEvent e, Vocabulary v) {
         JPopupMenu menu = new JPopupMenu();
+        menu.setBackground(AppColors.BG_CARD);
+        menu.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER_SOFT, 1, true),
+            new EmptyBorder(2, 0, 2, 0)
+        ));
 
         JMenuItem editItem = new JMenuItem("編輯單字");
         editItem.setFont(AppColors.FONT_BODY);
+        editItem.setForeground(AppColors.TEXT_PRIMARY);
+        editItem.setBackground(AppColors.BG_CARD);
+        editItem.setBorder(new EmptyBorder(6, 16, 6, 16));
+        editItem.setOpaque(true);
         editItem.addActionListener(ev -> showEditWordDialog(v));
 
         JMenuItem deleteItem = new JMenuItem("刪除單字");
         deleteItem.setFont(AppColors.FONT_BODY);
         deleteItem.setForeground(AppColors.TEXT_RED);
+        deleteItem.setBackground(AppColors.BG_CARD);
+        deleteItem.setBorder(new EmptyBorder(6, 16, 6, 16));
+        deleteItem.setOpaque(true);
         deleteItem.addActionListener(ev -> {
             if (!v.isCustom()) {
                 UIUtils.showMessage(this,
@@ -370,7 +424,6 @@ public class VocabManagerPanel extends JPanel {
         });
 
         menu.add(editItem);
-        menu.addSeparator();
         menu.add(deleteItem);
         menu.show(table, e.getX(), e.getY());
     }
@@ -425,10 +478,9 @@ public class VocabManagerPanel extends JPanel {
                 v.getWord(),
                 v.getPos() != null ? v.getPos() : "",
                 v.getMeaning(),
-                v.getFamiliarityStars(),
                 v.getCorrectCount(),
                 v.getWrongCount(),
-                v.getNextReviewDate() != null ? v.getNextReviewDate() : "—"
+                v.getFamiliarityStars()
             });
         }
         totalLabel.setText("顯示 " + list.size() + " / " + ctrl.getTotalCount() + " 筆單字");
@@ -438,41 +490,54 @@ public class VocabManagerPanel extends JPanel {
 
     // ── 新增單字對話框 ────────────────────────────────────────
     private void showAddWordDialog() {
-        JDialog dlg = newDialog("新增單字", 420, 310);
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dlg = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+        dlg.setUndecorated(true);
 
-        JTextField wordField      = styledTF();
-        JTextField meaningField   = styledTF();
-        JTextField phraseField    = styledTF();
-        JTextField phraseMeanField = styledTF();
+        JTextField wordField    = styledTF();
+        JTextField meaningField = styledTF();
+        JTextField exampleField = styledTF();
 
         String[] posOpts = {"n.","v.","adj.","adv.","prep.","conj.",
                             "pron.","interj.","n./v.","adj./n.","prep./adv."};
         JComboBox<String> posCombo = posCombo(posOpts);
 
-        JPanel form = buildFormPanel(5);
-        form.add(formLabel("英文單字 *"));    form.add(wordField);
-        form.add(formLabel("詞性"));          form.add(posCombo);
-        form.add(formLabel("中文詞義 *"));    form.add(meaningField);
-        form.add(formLabel("相關片語"));      form.add(phraseField);
-        form.add(formLabel("片語中文意思"));  form.add(phraseMeanField);
+        // 標題
+        JLabel titleLbl = new JLabel("新增單字");
+        titleLbl.setFont(new Font("Microsoft JhengHei", Font.BOLD, 18));
+        titleLbl.setForeground(AppColors.TEXT_PRIMARY);
+        titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
 
-        // 顯示目前選中的資料夾（如果有的話）
-        JLabel folderHint = new JLabel(selectedFolder != null
-            ? "  新增後將自動加入「" + selectedFolder + "」資料夾" : "");
+        // 表單
+        JPanel form = new JPanel(new GridLayout(4, 2, 8, 10));
+        form.setOpaque(false);
+        form.setBorder(new EmptyBorder(14, 0, 8, 0));
+        form.add(formLabelRequired("英文單字"));  form.add(wordField);
+        form.add(formLabelRequired("詞性"));     form.add(posCombo);
+        form.add(formLabelRequired("中文詞義")); form.add(meaningField);
+        form.add(formLabelRequired("例句"));     form.add(exampleField);
+
+        // 提示：顯示目標資料夾名稱
+        String displayFolder = FOLDER_ALL.equals(selectedFolder)   ? "全部單字"
+                             : FOLDER_TOEIC.equals(selectedFolder) ? "TOEIC 多益單字"
+                             : selectedFolder != null              ? selectedFolder : "全部單字";
+        JLabel folderHint = new JLabel("新增後將自動加入「" + displayFolder + "」資料夾");
         folderHint.setFont(AppColors.FONT_SMALL);
         folderHint.setForeground(new Color(0x2E7D6E));
 
-        JButton addBtn = accentBtn("確認新增");
-        JButton cancelBtn = sBtn("取消");
+        // 按鈕
+        JButton addBtn    = UIUtils.styledDialogBtn("確認新增", AppColors.BTN_PRIMARY, Color.WHITE);
+        JButton cancelBtn = UIUtils.styledDialogBtn("取消", new Color(0x9E8272), Color.WHITE);
         cancelBtn.addActionListener(e -> dlg.dispose());
 
         addBtn.addActionListener(e -> {
             String word    = wordField.getText().trim();
             String meaning = meaningField.getText().trim();
+            String example = exampleField.getText().trim();
             String pos     = posCombo.getSelectedItem() != null
                              ? posCombo.getSelectedItem().toString().trim() : "";
-            if (word.isEmpty() || meaning.isEmpty()) {
-                UIUtils.showMessage(dlg, "英文單字和中文詞義不能為空！", "欄位不完整");
+            if (word.isEmpty() || meaning.isEmpty() || example.isEmpty()) {
+                UIUtils.showMessage(dlg, "英文單字、中文詞義和例句均不能為空！", "欄位不完整");
                 return;
             }
             boolean exists = ctrl.getVocabList().stream()
@@ -481,24 +546,14 @@ public class VocabManagerPanel extends JPanel {
                 UIUtils.showMessage(dlg, "「" + word + "」已存在於單字庫中！", "重複單字");
                 return;
             }
-            Vocabulary v = new Vocabulary(word, meaning, pos, "");
-            v.setCustom(true);   // 使用者自訂新增的單字
-            String phrase  = phraseField.getText().trim();
-            String phraseM = phraseMeanField.getText().trim();
-            if (!phrase.isEmpty())  v.setPhrase(phrase);
-            if (!phraseM.isEmpty()) v.setPhraseMeaning(phraseM);
-
+            Vocabulary v = new Vocabulary(word, meaning, pos, example);
+            v.setCustom(true);
             ctrl.getVocabList().add(v);
-
-            // 自動加入目前選中的資料夾（只有在 user collection 時才加）
             if (selectedFolder != null && !FOLDER_ALL.equals(selectedFolder) && !FOLDER_TOEIC.equals(selectedFolder)) {
                 ctrl.getCollections().stream()
                     .filter(c -> c.getName().equals(selectedFolder))
                     .findFirst()
-                    .ifPresent(col -> {
-                        col.addWord(word);
-                        ctrl.saveCollections();
-                    });
+                    .ifPresent(col -> { col.addWord(word); ctrl.saveCollections(); });
             }
             ctrl.save();
             dlg.dispose();
@@ -506,43 +561,68 @@ public class VocabManagerPanel extends JPanel {
             UIUtils.showMessage(VocabManagerPanel.this,
                 "已新增「" + word + "」！" + (selectedFolder != null
                     && !FOLDER_ALL.equals(selectedFolder) && !FOLDER_TOEIC.equals(selectedFolder)
-                    ? "\n同時加入「" + selectedFolder + "」資料夾。" : ""),
-                "新增成功");
+                    ? "\n同時加入「" + selectedFolder + "」資料夾。" : ""), "新增成功");
         });
 
-        layoutDialog(dlg, form, folderHint, cancelBtn, addBtn);
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        btnRow.setOpaque(false);
+        btnRow.add(cancelBtn);
+        btnRow.add(Box.createHorizontalStrut(8));
+        btnRow.add(addBtn);
+
+        JPanel south = new JPanel(new BorderLayout());
+        south.setOpaque(false);
+        south.add(folderHint, BorderLayout.WEST);
+        south.add(btnRow,     BorderLayout.EAST);
+
+        JPanel content = new JPanel(new BorderLayout(0, 0));
+        content.setBackground(AppColors.BG_MAIN);
+        content.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER, 2),
+            new EmptyBorder(22, 26, 18, 26)
+        ));
+        content.add(titleLbl, BorderLayout.NORTH);
+        content.add(form,     BorderLayout.CENTER);
+        content.add(south,    BorderLayout.SOUTH);
+
+        dlg.setContentPane(content);
+        dlg.pack();
+        dlg.setMinimumSize(new Dimension(420, dlg.getHeight()));
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
     }
 
     // ── 編輯單字對話框 ────────────────────────────────────────
     private void showEditWordDialog(Vocabulary v) {
-        JDialog dlg = newDialog("編輯單字", 420, 310);
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dlg = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+        dlg.setUndecorated(true);
 
-        JTextField wordField      = styledTF();
-        JTextField meaningField   = styledTF();
-        JTextField phraseField    = styledTF();
-        JTextField phraseMeanField = styledTF();
+        JTextField wordField    = styledTF();
+        JTextField meaningField = styledTF();
 
         String[] posOpts = {"n.","v.","adj.","adv.","prep.","conj.",
                             "pron.","interj.","n./v.","adj./n.","prep./adv."};
         JComboBox<String> posCombo = posCombo(posOpts);
 
-        // 預填現有資料
-        wordField.setText(v.getWord() != null      ? v.getWord()         : "");
-        meaningField.setText(v.getMeaning() != null ? v.getMeaning()      : "");
-        phraseField.setText(v.getPhrase() != null   ? v.getPhrase()       : "");
-        phraseMeanField.setText(v.getPhraseMeaning() != null
-                                                    ? v.getPhraseMeaning() : "");
+        wordField.setText(v.getWord()    != null ? v.getWord()    : "");
+        meaningField.setText(v.getMeaning() != null ? v.getMeaning() : "");
         posCombo.setSelectedItem(v.getPos() != null ? v.getPos() : "");
 
-        JPanel form = buildFormPanel(5);
-        form.add(formLabel("英文單字 *"));    form.add(wordField);
-        form.add(formLabel("詞性"));          form.add(posCombo);
-        form.add(formLabel("中文詞義 *"));    form.add(meaningField);
-        form.add(formLabel("相關片語"));      form.add(phraseField);
-        form.add(formLabel("片語中文意思"));  form.add(phraseMeanField);
+        JLabel titleLbl = new JLabel("編輯單字");
+        titleLbl.setFont(new Font("Microsoft JhengHei", Font.BOLD, 18));
+        titleLbl.setForeground(AppColors.TEXT_PRIMARY);
+        titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
 
-        JButton saveBtn   = accentBtn("儲存修改");
-        JButton cancelBtn = sBtn("取消");
+        JPanel form = new JPanel(new GridLayout(3, 2, 8, 10));
+        form.setOpaque(false);
+        form.setBorder(new EmptyBorder(14, 0, 8, 0));
+        form.add(formLabelRequired("英文單字")); form.add(wordField);
+        form.add(formLabelRequired("詞性"));     form.add(posCombo);
+        form.add(formLabelRequired("中文詞義")); form.add(meaningField);
+
+        JButton saveBtn   = UIUtils.styledDialogBtn("儲存修改", AppColors.BTN_PRIMARY, Color.WHITE);
+        JButton cancelBtn = UIUtils.styledDialogBtn("取消", new Color(0x9E8272), Color.WHITE);
         cancelBtn.addActionListener(e -> dlg.dispose());
 
         saveBtn.addActionListener(e -> {
@@ -554,7 +634,6 @@ public class VocabManagerPanel extends JPanel {
                 UIUtils.showMessage(dlg, "英文單字和中文詞義不能為空！", "欄位不完整");
                 return;
             }
-            // 如果單字名稱改變，同步更新所有 Collection 中的紀錄
             String oldWord = v.getWord();
             if (!newWord.equals(oldWord)) {
                 boolean dup = ctrl.getVocabList().stream()
@@ -564,24 +643,39 @@ public class VocabManagerPanel extends JPanel {
                     return;
                 }
                 for (VocabCollection col : ctrl.getCollections()) {
-                    if (col.containsWord(oldWord)) {
-                        col.removeWord(oldWord);
-                        col.addWord(newWord);
-                    }
+                    if (col.containsWord(oldWord)) { col.removeWord(oldWord); col.addWord(newWord); }
                 }
                 ctrl.saveCollections();
             }
             v.setWord(newWord);
             v.setMeaning(newMeaning);
             v.setPos(newPos);
-            v.setPhrase(phraseField.getText().trim());
-            v.setPhraseMeaning(phraseMeanField.getText().trim());
             ctrl.save();
             dlg.dispose();
             refresh();
         });
 
-        layoutDialog(dlg, form, new JLabel(""), cancelBtn, saveBtn);
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        btnRow.setOpaque(false);
+        btnRow.add(cancelBtn);
+        btnRow.add(Box.createHorizontalStrut(8));
+        btnRow.add(saveBtn);
+
+        JPanel content = new JPanel(new BorderLayout(0, 0));
+        content.setBackground(AppColors.BG_MAIN);
+        content.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER, 2),
+            new EmptyBorder(22, 26, 18, 26)
+        ));
+        content.add(titleLbl, BorderLayout.NORTH);
+        content.add(form,     BorderLayout.CENTER);
+        content.add(btnRow,   BorderLayout.SOUTH);
+
+        dlg.setContentPane(content);
+        dlg.pack();
+        dlg.setMinimumSize(new Dimension(400, dlg.getHeight()));
+        dlg.setLocationRelativeTo(this);
+        dlg.setVisible(true);
     }
 
     // ── 新增資料夾 ────────────────────────────────────────────
@@ -600,133 +694,138 @@ public class VocabManagerPanel extends JPanel {
         refresh();
     }
 
-    // ── 錯題本彈窗（主題化） ──────────────────────────────────
+    // ── 錯題本彈窗 ──────────────────────────────────────────────
     private void showWrongWords() {
         List<Vocabulary> wrongs = ctrl.getWrongWords();
         if (wrongs.isEmpty()) {
             UIUtils.showMessage(this, "目前沒有錯題記錄！", "錯題本");
             return;
         }
-        // 按錯誤次數降序排列
         wrongs = wrongs.stream()
             .sorted((a, b) -> b.getWrongCount() - a.getWrongCount())
             .collect(Collectors.toList());
 
-        Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
-        JDialog dlg = new JDialog(owner, "錯題本", true);
-        dlg.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dlg = new JDialog(owner, Dialog.ModalityType.APPLICATION_MODAL);
+        dlg.setUndecorated(true);
 
-        JPanel root = new JPanel(new BorderLayout(0, 14));
-        root.setBackground(AppColors.BG_MAIN);
-        root.setBorder(new EmptyBorder(22, 26, 18, 26));
-
-        // ── 頭部 ──
-        JPanel head = new JPanel(new BorderLayout(0, 4));
-        head.setOpaque(false);
-        head.setBorder(new EmptyBorder(0, 0, 10, 0));
+        // 標題
         JLabel titleLbl = new JLabel("錯題本");
         titleLbl.setFont(AppColors.FONT_TITLE);
-        titleLbl.setForeground(AppColors.TEXT_RED);
-        JLabel subLbl = new JLabel("共 " + wrongs.size() + " 個單字需要加強，依錯誤次數排序");
+        titleLbl.setForeground(AppColors.TEXT_PRIMARY);
+        titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
+
+        JLabel subLbl = new JLabel("錯誤單字：" + wrongs.size() + " 個");
         subLbl.setFont(AppColors.FONT_SMALL);
-        subLbl.setForeground(AppColors.TEXT_SECONDARY);
-        head.add(titleLbl, BorderLayout.WEST);
+        subLbl.setForeground(AppColors.TEXT_RED);
+        subLbl.setBorder(new EmptyBorder(6, 0, 0, 0));
+
+        JPanel head = new JPanel(new BorderLayout(0, 0));
+        head.setOpaque(false);
+        head.setBorder(new EmptyBorder(0, 0, 12, 0));
+        head.add(titleLbl, BorderLayout.NORTH);
         head.add(subLbl,   BorderLayout.SOUTH);
 
-        // ── 表格 ──
-        String[] cols = {"單字", "詞義", "錯誤次數", "熟悉度"};
+        // 表格：單字、詞性、詞義、錯誤次數
+        String[] cols = {"單字", "詞性", "詞義", "錯誤次數"};
         Object[][] data = new Object[wrongs.size()][4];
         for (int i = 0; i < wrongs.size(); i++) {
             Vocabulary vv = wrongs.get(i);
             data[i][0] = vv.getWord();
-            data[i][1] = vv.getMeaning() != null ? vv.getMeaning() : "";
-            data[i][2] = vv.getWrongCount();
-            data[i][3] = vv.getFamiliarityStars();
+            data[i][1] = vv.getPos().isEmpty() ? "—" : vv.getPos();
+            data[i][2] = vv.getMeaning() != null ? vv.getMeaning() : "";
+            data[i][3] = vv.getWrongCount();
         }
         DefaultTableModel tm = new DefaultTableModel(data, cols) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
             @Override public Class<?> getColumnClass(int c) {
-                return c == 2 ? Integer.class : String.class;
+                return c == 3 ? Integer.class : String.class;
             }
         };
-        JTable tbl = new JTable(tm);
+        Color SEL_BG = new Color(168, 200, 192, 128);
+
+        JTable tbl = new JTable(tm) {
+            @Override public Component prepareRenderer(
+                    javax.swing.table.TableCellRenderer r, int row, int col) {
+                Component c = super.prepareRenderer(r, row, col);
+                if (isRowSelected(row)) {
+                    c.setBackground(SEL_BG);
+                } else {
+                    c.setBackground(AppColors.BG_CARD);
+                }
+                return c;
+            }
+        };
         tbl.setFont(AppColors.FONT_BODY);
         tbl.setRowHeight(28);
         tbl.setBackground(AppColors.BG_CARD);
         tbl.setGridColor(new Color(0xE8E8E8));
-        tbl.setSelectionBackground(new Color(0xFFE4D0));
+        tbl.setSelectionBackground(SEL_BG);
+        tbl.setSelectionForeground(AppColors.TEXT_PRIMARY);
         tbl.getTableHeader().setFont(AppColors.FONT_BODY);
-        tbl.getTableHeader().setBackground(new Color(0xF0E8D8));
+        tbl.getTableHeader().setBackground(new Color(0xDDD0BC));
         tbl.getTableHeader().setForeground(AppColors.TEXT_PRIMARY);
+        tbl.getTableHeader().setReorderingAllowed(false);
         tbl.setAutoCreateRowSorter(true);
 
-        int[] widths = {120, 180, 80, 110};
+        int[] widths = {110, 70, 190, 80};
         for (int i = 0; i < widths.length; i++)
             tbl.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
 
-        // 單字欄（紅色）
-        tbl.getColumnModel().getColumn(0).setCellRenderer(
-            new javax.swing.table.DefaultTableCellRenderer() {
-                { setForeground(AppColors.TEXT_RED); }
-                @Override public Component getTableCellRendererComponent(
-                        JTable t, Object v, boolean sel, boolean foc, int r, int c) {
-                    super.getTableCellRendererComponent(t, v, sel, foc, r, c);
-                    setForeground(sel ? Color.WHITE : AppColors.TEXT_RED);
-                    setFont(new Font("Serif", Font.BOLD, 13));
-                    return this;
-                }
-            });
-        // 錯誤次數欄（紅色居中）
-        tbl.getColumnModel().getColumn(2).setCellRenderer(
-            new javax.swing.table.DefaultTableCellRenderer() {
-                @Override public Component getTableCellRendererComponent(
-                        JTable t, Object v, boolean sel, boolean foc, int r, int c) {
-                    super.getTableCellRendererComponent(t, v, sel, foc, r, c);
-                    setHorizontalAlignment(CENTER);
-                    setForeground(sel ? Color.WHITE : AppColors.TEXT_RED);
-                    setFont(AppColors.FONT_BTN);
-                    setText(v != null ? v + " 次" : "");
-                    return this;
-                }
-            });
-        // 熟悉度欄（居中）
+        // 預設左 padding renderer
+        javax.swing.table.DefaultTableCellRenderer paddedLeft =
+            new javax.swing.table.DefaultTableCellRenderer();
+        paddedLeft.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+        for (int i = 0; i < 4; i++)
+            tbl.getColumnModel().getColumn(i).setCellRenderer(paddedLeft);
+
+        // 單字欄：黑色 + 左 padding
+        javax.swing.table.DefaultTableCellRenderer blackRenderer =
+            new javax.swing.table.DefaultTableCellRenderer();
+        blackRenderer.setForeground(AppColors.TEXT_PRIMARY);
+        blackRenderer.setFont(new Font("Serif", Font.BOLD, 13));
+        blackRenderer.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
+        tbl.getColumnModel().getColumn(0).setCellRenderer(blackRenderer);
+
+        // 錯誤次數欄：紅色居中
         tbl.getColumnModel().getColumn(3).setCellRenderer(
             new javax.swing.table.DefaultTableCellRenderer() {
                 @Override public Component getTableCellRendererComponent(
                         JTable t, Object v, boolean sel, boolean foc, int r, int c) {
                     super.getTableCellRendererComponent(t, v, sel, foc, r, c);
                     setHorizontalAlignment(CENTER);
-                    setForeground(sel ? Color.WHITE : AppColors.TEXT_SECONDARY);
+                    setForeground(AppColors.TEXT_RED);
+                    setFont(AppColors.FONT_BTN);
+                    setText(v != null ? v + " 次" : "");
+                    setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
                     return this;
                 }
             });
 
         JScrollPane scroll = new JScrollPane(tbl);
-        scroll.setBorder(new LineBorder(AppColors.BORDER, 2, true));
+        scroll.setBorder(new LineBorder(AppColors.BORDER_SOFT));
         scroll.getViewport().setBackground(AppColors.BG_CARD);
 
-        // ── 關閉按鈕 ──
-        JButton okBtn = new JButton("關閉");
-        okBtn.setFont(AppColors.FONT_BTN);
-        okBtn.setBackground(AppColors.BTN_PRIMARY);
-        okBtn.setForeground(Color.WHITE);
-        okBtn.setBorder(new CompoundBorder(
-            new LineBorder(AppColors.BORDER, 1, true),
-            new EmptyBorder(8, 36, 8, 36)
-        ));
-        okBtn.setFocusPainted(false);
-        okBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        // 關閉按鈕（靠右）
+        JButton okBtn = UIUtils.styledDialogBtn("關閉", AppColors.BTN_PRIMARY, Color.WHITE);
         okBtn.addActionListener(e -> dlg.dispose());
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 6));
+        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnRow.setOpaque(false);
+        btnRow.setBorder(new EmptyBorder(10, 0, 0, 0));
         btnRow.add(okBtn);
 
-        root.add(head,   BorderLayout.NORTH);
-        root.add(scroll, BorderLayout.CENTER);
-        root.add(btnRow, BorderLayout.SOUTH);
+        JPanel content = new JPanel(new BorderLayout(0, 0));
+        content.setBackground(AppColors.BG_MAIN);
+        content.setBorder(new CompoundBorder(
+            new LineBorder(AppColors.BORDER, 2),
+            new EmptyBorder(22, 26, 18, 26)
+        ));
+        content.add(head,   BorderLayout.NORTH);
+        content.add(scroll, BorderLayout.CENTER);
+        content.add(btnRow, BorderLayout.SOUTH);
 
-        dlg.setContentPane(root);
-        dlg.setSize(580, 480);
+        dlg.setContentPane(content);
+        dlg.setSize(520, 440);
         dlg.setLocationRelativeTo(this);
         dlg.setVisible(true);
     }
@@ -771,8 +870,35 @@ public class VocabManagerPanel extends JPanel {
     }
 
     // ── UI 小工具 ─────────────────────────────────────────────
+    private JMenuItem styledMenuItem(String text, Color fg) {
+        JMenuItem item = new JMenuItem(text) {
+            @Override protected void paintComponent(Graphics g) {
+                if (isArmed()) {
+                    g.setColor(new Color(168, 200, 192, 120));
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                } else {
+                    g.setColor(AppColors.BG_CARD);
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+                super.paintComponent(g);
+            }
+        };
+        item.setFont(AppColors.FONT_BODY);
+        item.setForeground(fg);
+        item.setBackground(AppColors.BG_CARD);
+        item.setOpaque(false);
+        item.setBorder(new EmptyBorder(7, 16, 7, 16));
+        return item;
+    }
+
     private JLabel formLabel(String text) {
         JLabel l = new JLabel(text);
+        l.setFont(AppColors.FONT_BODY);
+        l.setForeground(AppColors.TEXT_PRIMARY);
+        return l;
+    }
+    private JLabel formLabelRequired(String text) {
+        JLabel l = new JLabel("<html>" + text + " <font color='#E53935'>*</font></html>");
         l.setFont(AppColors.FONT_BODY);
         l.setForeground(AppColors.TEXT_PRIMARY);
         return l;
@@ -784,6 +910,11 @@ public class VocabManagerPanel extends JPanel {
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
             new EmptyBorder(4, 8, 4, 8)
         ));
+        int mask = java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        f.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, mask), javax.swing.text.DefaultEditorKit.copyAction);
+        f.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_V, mask), javax.swing.text.DefaultEditorKit.pasteAction);
+        f.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_X, mask), javax.swing.text.DefaultEditorKit.cutAction);
+        f.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_A, mask), javax.swing.text.DefaultEditorKit.selectAllAction);
         return f;
     }
     private JComboBox<String> posCombo(String[] opts) {
@@ -803,19 +934,21 @@ public class VocabManagerPanel extends JPanel {
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BTN_PRIMARY);
         return b;
     }
     private JButton sBtn(String text) {
         JButton b = new JButton(text);
         b.setFont(AppColors.FONT_BTN);
         b.setBackground(AppColors.BG_CARD);
-        b.setForeground(AppColors.TEXT_PRIMARY);
+        b.setForeground(new Color(0x7C6250));
         b.setBorder(new CompoundBorder(
-            new LineBorder(AppColors.BORDER, 1, true),
+            new LineBorder(new Color(0x7C6250), 1, true),
             new EmptyBorder(5, 12, 5, 12)
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        UIUtils.addHover(b, AppColors.BG_CARD);
         return b;
     }
 }

@@ -14,8 +14,7 @@ public class WordCardPopup {
         Window w = SwingUtilities.getWindowAncestor(parent);
         JDialog dlg = new JDialog(w, Dialog.ModalityType.APPLICATION_MODAL);
         dlg.setUndecorated(true);
-        dlg.setMinimumSize(new Dimension(480, 0));
-        dlg.setLocationRelativeTo(parent);
+        dlg.setResizable(false);
 
         // Root panel: compound border gives the "floating card" look
         JPanel content = new JPanel(new BorderLayout(0, 0));
@@ -69,8 +68,10 @@ public class WordCardPopup {
 
         String ex = v.getExample();
         if (ex != null && !ex.isBlank()) {
-            JLabel exLbl = new JLabel("<html><center><i>" + ex + "</i></center></html>",
-                    SwingConstants.CENTER);
+            // body width 屬性強制 Swing HTML 引擎在 440px 內換行
+            JLabel exLbl = new JLabel(
+                "<html><body width='440'><div align='center'><i>" + ex + "</i></div></body></html>",
+                SwingConstants.CENTER);
             exLbl.setFont(new Font("Serif", Font.ITALIC, 17));
             exLbl.setForeground(AppColors.TEXT_SECONDARY);
             exLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -101,7 +102,7 @@ public class WordCardPopup {
         content.add(btnRow,  BorderLayout.SOUTH);
 
         dlg.setContentPane(content);
-        dlg.pack();
+        dlg.setSize(560, 400);
         dlg.setLocationRelativeTo(parent);
         dlg.setVisible(true);
     }

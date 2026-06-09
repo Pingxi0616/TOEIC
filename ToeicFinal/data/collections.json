@@ -1,28 +1,48 @@
 [
   {
-    "name": "資工",
+    "name": "資安導論",
     "words": [
-      "Ciphertext"
+      "nondisclosure",
+      "cascading",
+      "obscurity",
+      "perimeter",
+      "emanation",
+      "retention",
+      "refresher",
+      "suppression",
+      "mandatory",
+      "checklist",
+      "biometric",
+      "continuity",
+      "vulnerability",
+      "mitigation",
+      "transference",
+      "disruption",
+      "stratify",
+      "clearance",
+      "proprietary",
+      "polygraph",
+      "obligation",
+      "revocation",
+      "debrief",
+      "cryptology",
+      "ciphertext",
+      "symmetric",
+      "asymmetric",
+      "plaintext",
+      "nonrepudiation",
+      "permutation",
+      "exhaustive",
+      "hashing",
+      "authentication",
+      "confidentiality",
+      "algorithm",
+      "trapdoor",
+      "modulus",
+      "discrete log",
+      "elliptic curve",
+      "infrastructure",
+      "tabletop"
     ]
-  },
-  {
-    "name": "旅行",
-    "words": []
-  },
-  {
-    "name": "動物叫聲",
-    "words": [
-      "meow",
-      "gigi",
-      "hehe"
-    ]
-  },
-  {
-    "name": "運動",
-    "words": []
-  },
-  {
-    "name": "大自然",
-    "words": []
   }
 ]

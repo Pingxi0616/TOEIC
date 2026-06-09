@@ -72,4 +72,14 @@ public class DashboardController {
         reviewManager.updateAfterAnswer(vocab, correct);
         save();
     }
+
+    /** 根據偏好設定建立客製化單字池 */
+    public List<Vocabulary> buildCustomPool(boolean inclWrong, boolean inclLearned, boolean inclUnlearned) {
+        return vocabList.stream().filter(v -> {
+            boolean wrong     = v.getWrongCount() > 0;
+            boolean learned   = (v.getCorrectCount() > 0 || v.getWrongCount() > 0);
+            boolean unlearned = (v.getCorrectCount() == 0 && v.getWrongCount() == 0);
+            return (inclWrong && wrong) || (inclLearned && learned) || (inclUnlearned && unlearned);
+        }).collect(Collectors.toList());
+    }
 }

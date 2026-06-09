@@ -104,11 +104,33 @@ public class QuizManager {
                 if (!wrongPool.contains(v)) wrongPool.add(v);
             }
         }
+        // 錯題複習交替出單字（EN_TO_CN）和句子填空（FILL_BLANK）兩種模式
+        Mode[] wrongModes = {Mode.EN_TO_CN, Mode.FILL_BLANK};
         for (int i = 0; i < Math.min(wrongCount, wrongPool.size()); i++) {
-            items.add(new QuizItem(wrongPool.get(i), Mode.EN_TO_CN));
+            items.add(new QuizItem(wrongPool.get(i), wrongModes[i % 2]));
         }
 
         // 最終打亂順序
+        Collections.shuffle(items, random);
+        return items;
+    }
+
+    /** 客製化出題：從指定 pool 出 vocabCount 道單字題 + fillCount 道填空題 */
+    public List<QuizItem> generateMixedQuiz(int vocabCount, int fillCount, List<Vocabulary> pool) {
+        List<QuizItem> items = new ArrayList<>();
+        List<Vocabulary> shuffled = new ArrayList<>(pool);
+        Collections.shuffle(shuffled, random);
+
+        Mode[] vocabModes = {Mode.EN_TO_CN, Mode.CN_TO_EN, Mode.PHRASE};
+        for (int i = 0; i < Math.min(vocabCount, shuffled.size()); i++) {
+            items.add(new QuizItem(shuffled.get(i), vocabModes[i % 3]));
+        }
+
+        Collections.shuffle(shuffled, random);
+        for (int i = 0; i < Math.min(fillCount, shuffled.size()); i++) {
+            items.add(new QuizItem(shuffled.get(i), Mode.FILL_BLANK));
+        }
+
         Collections.shuffle(items, random);
         return items;
     }

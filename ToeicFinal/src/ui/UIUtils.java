@@ -91,7 +91,7 @@ public class UIUtils {
             new EmptyBorder(5, 8, 5, 8)
         ));
 
-        JButton cancel = styledDialogBtn("取消", AppColors.TEXT_SECONDARY, AppColors.BG_MAIN);
+        JButton cancel = styledDialogBtn("取消", new Color(0x9E8272), Color.WHITE);
         JButton ok     = styledDialogBtn("確定", AppColors.BTN_PRIMARY, Color.WHITE);
         cancel.addActionListener(e -> dlg.dispose());
         ok.addActionListener(e -> { result[0] = field.getText(); dlg.dispose(); });
@@ -113,7 +113,7 @@ public class UIUtils {
         JDialog dlg = buildDlg(parent, title);
         JPanel content = buildContent(title, message);
 
-        JButton no  = styledDialogBtn("取消", AppColors.TEXT_SECONDARY, AppColors.BG_MAIN);
+        JButton no  = styledDialogBtn("取消", new Color(0x9E8272), Color.WHITE);
         JButton yes = styledDialogBtn("確定", AppColors.BTN_PRIMARY, Color.WHITE);
         no .addActionListener(e -> dlg.dispose());
         yes.addActionListener(e -> { result[0] = true; dlg.dispose(); });
@@ -150,8 +150,8 @@ public class UIUtils {
         titleLbl.setForeground(AppColors.TEXT_PRIMARY);
         titleLbl.setBorder(new EmptyBorder(0, 0, 4, 0));
 
-        // 多行訊息支援（\n 換行）
-        String html = "<html>" + message.replace("\n", "<br>") + "</html>";
+        // 多行訊息支援（\n 換行，固定寬度自動換行）
+        String html = "<html><div style='width:320px'>" + message.replace("\n", "<br>") + "</div></html>";
         JLabel msgLbl = new JLabel(html);
         msgLbl.setFont(AppColors.FONT_BODY);
         msgLbl.setForeground(AppColors.TEXT_SECONDARY);
@@ -164,12 +164,13 @@ public class UIUtils {
     private static void finishDlg(JDialog dlg, JPanel content, Component parent) {
         dlg.setContentPane(content);
         dlg.pack();
-        dlg.setMinimumSize(new Dimension(300, dlg.getHeight()));
+        dlg.setSize(420, dlg.getPreferredSize().height);
+        dlg.setResizable(false);
         dlg.setLocationRelativeTo(parent);
         dlg.setVisible(true);
     }
 
-    private static JButton styledDialogBtn(String text, Color bg, Color fg) {
+    public static JButton styledDialogBtn(String text, Color bg, Color fg) {
         JButton b = new JButton(text);
         b.setFont(AppColors.FONT_BTN);
         b.setBackground(bg);
@@ -177,11 +178,34 @@ public class UIUtils {
         b.setOpaque(true);
         b.setBorder(new CompoundBorder(
             new LineBorder(AppColors.BORDER_SOFT, 1, true),
-            new EmptyBorder(5, 16, 5, 16)
+            new EmptyBorder(5, 10, 5, 10)
         ));
         b.setFocusPainted(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        addHover(b, bg);
         return b;
+    }
+
+    /** 把顏色加亮 amount */
+    public static Color brighter(Color c, int amount) {
+        return new Color(
+            Math.min(255, c.getRed()   + amount),
+            Math.min(255, c.getGreen() + amount),
+            Math.min(255, c.getBlue()  + amount)
+        );
+    }
+
+    /** 為按鈕加上 hover 效果（背景稍微加亮） */
+    public static void addHover(JButton b, Color base) {
+        Color hover = new Color(
+            Math.min(255, base.getRed()   + 25),
+            Math.min(255, base.getGreen() + 25),
+            Math.min(255, base.getBlue()  + 25)
+        );
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) { b.setBackground(hover); }
+            @Override public void mouseExited (java.awt.event.MouseEvent e) { b.setBackground(base);  }
+        });
     }
 
     private UIUtils() {}

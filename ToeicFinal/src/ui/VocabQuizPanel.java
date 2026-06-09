@@ -8,6 +8,7 @@ import model.Vocabulary;
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.List;
 
 /**
@@ -30,17 +31,16 @@ public class VocabQuizPanel extends JPanel {
     private int  currentIndex = 0;
     private int  correctCount = 0;
     private boolean customMode = false;
+    private boolean answered   = false;
     private Runnable onFinishCallback;
 
     // 測驗 UI
     private JLabel  progressLabel, scoreLabel;
     private JLabel  questionLabel, hintLabel;
-    private JLabel  chipReview, chipFam, chipNext;
+    private JLabel  chipReview, chipFam;
     private JButton[] optBtns = new JButton[4];
     private JLabel  feedbackLabel;
     private JButton nextBtn, pronounceBtn;
-    private JPanel  modeRow;
-    private JButton[] modeBtns = new JButton[2];
 
     public VocabQuizPanel(DashboardController ctrl) {
         this.ctrl = ctrl;
@@ -51,9 +51,9 @@ public class VocabQuizPanel extends JPanel {
         innerArea = new JPanel(inner);
         innerArea.setOpaque(false);
 
-        selector = new QuizSourceSelector(ctrl, "單字片語測驗", this::startFromSource);
-        innerArea.add(selector,         "selector");
-        innerArea.add(buildQuizPage(),  "quiz");
+        selector = new QuizSourceSelector(ctrl, "單字片語測驗", this::startFromSource, true);
+        innerArea.add(selector,        "selector");
+        innerArea.add(buildQuizPage(), "quiz");
 
         add(innerArea, BorderLayout.CENTER);
         showSelector();
@@ -69,8 +69,7 @@ public class VocabQuizPanel extends JPanel {
         currentIndex = 0;
         correctCount = 0;
         customMode   = false;
-        modeRow.setVisible(true);
-        refreshModeBtns();
+        currentMode  = selector.getSelectedMode();  // 從 selector 取得選擇的模式
         inner.show(innerArea, "quiz");
         loadQuestion();
     }
@@ -80,8 +79,6 @@ public class VocabQuizPanel extends JPanel {
         currentIndex = 0;
         correctCount = 0;
         customMode   = false;
-        modeRow.setVisible(true);
-        refreshModeBtns();
         inner.show(innerArea, "quiz");
         loadQuestion();
     }
@@ -93,8 +90,6 @@ public class VocabQuizPanel extends JPanel {
         quizList          = list;
         currentIndex      = 0;
         correctCount      = 0;
-        modeRow.setVisible(false);
-        refreshModeBtns();
         inner.show(innerArea, "quiz");
         loadQuestion();
     }
@@ -118,25 +113,21 @@ public class VocabQuizPanel extends JPanel {
         title.setFont(AppColors.FONT_TITLE);
         title.setForeground(AppColors.TEXT_PRIMARY);
 
-        modeRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        modeRow.setOpaque(false);
-        String[] modeNames = {"英翻中","中翻英"};
-        Mode[]   modeVals  = {Mode.EN_TO_CN, Mode.CN_TO_EN};
-        for (int i = 0; i < 2; i++) {
-            final int fi = i;
-            modeBtns[i] = new JButton(modeNames[i]);
-            modeBtns[i].setFont(AppColors.FONT_BTN);
-            modeBtns[i].setFocusPainted(false);
-            modeBtns[i].setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            modeBtns[i].addActionListener(e -> { currentMode = modeVals[fi]; refreshModeBtns(); loadQuestion(); });
-            modeRow.add(modeBtns[i]);
-        }
         JButton backBtn = makeBtn("退出測驗", AppColors.BG_CARD, AppColors.TEXT_RED);
-        backBtn.addActionListener(e -> showSelector());
-        modeRow.add(backBtn);
+        backBtn.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) { backBtn.setBackground(new Color(0xFFEBEB)); }
+            @Override public void mouseExited (java.awt.event.MouseEvent e) { backBtn.setBackground(AppColors.BG_CARD); }
+        });
+        backBtn.addActionListener(e -> {
+            if (UIUtils.showConfirm(this, "確定要退出測驗嗎？進度將不會保留。", "退出確認"))
+                showSelector();
+        });
 
-        p.add(title,   BorderLayout.WEST);
-        p.add(modeRow, BorderLayout.EAST);
+        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        west.setOpaque(false);
+        west.add(title);
+        p.add(west,    BorderLayout.WEST);
+        p.add(backBtn, BorderLayout.EAST);
         return p;
     }
 
@@ -159,13 +150,15 @@ public class VocabQuizPanel extends JPanel {
         progRow.add(progressLabel, BorderLayout.WEST);
         progRow.add(scoreLabel,    BorderLayout.EAST);
 
-        // Chips
-        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        // Chips（只保留今日待複習和熟悉度，字體放大、加上頂部間距）
+        JPanel chips = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         chips.setOpaque(false);
+        chips.setBorder(new EmptyBorder(6, 0, 0, 0));
         chipReview = chip("今日待複習", new Color(0xFAEEDA), new Color(0x633806));
         chipFam    = chip("熟悉度 ★☆☆☆☆", AppColors.BG_CARD, AppColors.TEXT_SECONDARY);
-        chipNext   = chip("答對 +1天",      AppColors.BG_CARD, AppColors.TEXT_SECONDARY);
-        chips.add(chipReview); chips.add(chipFam); chips.add(chipNext);
+        chipReview.setFont(AppColors.FONT_BODY);
+        chipFam.setFont(AppColors.FONT_BODY);
+        chips.add(chipReview); chips.add(chipFam);
 
         questionLabel = new JLabel("", SwingConstants.CENTER);
         questionLabel.setFont(AppColors.FONT_WORD);
@@ -198,23 +191,33 @@ public class VocabQuizPanel extends JPanel {
 
         feedbackLabel = new JLabel("", SwingConstants.CENTER);
         feedbackLabel.setFont(AppColors.FONT_BODY);
+        // 預先佔好固定高度，點選答案後文字出現時不會壓縮選項格
+        feedbackLabel.setPreferredSize(new Dimension(0, 26));
+        feedbackLabel.setMinimumSize(new Dimension(0, 26));
 
-        // 底部
-        JPanel bottom = new JPanel(new BorderLayout());
-        bottom.setOpaque(false);
-        JLabel srInfo = new JLabel("<html>答對 → 間隔延長 &nbsp; 答錯 → 明天再複習</html>");
-        srInfo.setFont(AppColors.FONT_SMALL);
-        srInfo.setForeground(AppColors.TEXT_SECONDARY);
+        // 底部（移除說明文字，只保留按鈕）
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
-        pronounceBtn = makeBtn("發音", AppColors.BG_CARD, AppColors.TEXT_PRIMARY);
+        pronounceBtn = makeBtn("🔊", AppColors.BG_CARD, AppColors.TEXT_PRIMARY);
+        pronounceBtn.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
         pronounceBtn.addActionListener(e -> pronounce());
         nextBtn = makeBtn("下一題 →", AppColors.BTN_PRIMARY, Color.WHITE);
         nextBtn.setVisible(false);
         nextBtn.addActionListener(e -> nextQuestion());
         right.add(pronounceBtn); right.add(nextBtn);
-        bottom.add(srInfo, BorderLayout.WEST);
-        bottom.add(right,  BorderLayout.EAST);
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setOpaque(false);
+        bottom.add(right, BorderLayout.EAST);
+
+        // 兩個按鈕等高
+        SwingUtilities.invokeLater(() -> {
+            int h = nextBtn.getPreferredSize().height;
+            Dimension pd = pronounceBtn.getPreferredSize();
+            pronounceBtn.setPreferredSize(new Dimension(pd.width, h));
+            pronounceBtn.setMinimumSize(new Dimension(pd.width, h));
+            pronounceBtn.setMaximumSize(new Dimension(pd.width, h));
+            right.revalidate();
+        });
 
         JPanel center = new JPanel(new BorderLayout(0, 12));
         center.setOpaque(false);
@@ -240,7 +243,6 @@ public class VocabQuizPanel extends JPanel {
         scoreLabel.setText("答對 " + correctCount + " · 答錯 " + (currentIndex - correctCount));
         chipReview.setVisible(v.isDueToday());
         chipFam.setText("熟悉度 " + v.getFamiliarityStars());
-        chipNext.setText("答對 +" + Math.min(v.getFamiliarity()+1, 5) + "天");
 
         String q = qm.getQuestion(v, currentMode);
         questionLabel.setText(q.length() > 40
@@ -249,35 +251,36 @@ public class VocabQuizPanel extends JPanel {
         hintLabel.setText(modeHint(currentMode));
         feedbackLabel.setText("");
         nextBtn.setVisible(false);
+        answered = false;
 
         List<String> opts = qm.generateOptions(v, currentMode);
         for (int i = 0; i < 4; i++) {
             optBtns[i].setText(i < opts.size() ? opts.get(i) : "—");
-            optBtns[i].setEnabled(true);
             optBtns[i].setBackground(new Color(0xF0EAD8));
             optBtns[i].setForeground(AppColors.TEXT_PRIMARY);
         }
     }
 
     private void onOptionClick(int idx) {
+        if (answered) return;
+        answered = true;
         Vocabulary v   = quizList.get(currentIndex);
         String sel     = optBtns[idx].getText();
         String answer  = ctrl.getQuizManager().getAnswer(v, currentMode);
         boolean correct = sel.equals(answer);
         ctrl.submitAnswer(v, correct);
-        for (JButton b : optBtns) b.setEnabled(false);
         if (correct) {
             correctCount++;
             optBtns[idx].setBackground(new Color(0xC8E6C9));
-            optBtns[idx].setForeground(new Color(0x1B5E20));
+            optBtns[idx].setForeground(AppColors.TEXT_PRIMARY);
             feedbackLabel.setText("正確！  " + v.getWord() + "：" + v.getMeaning());
             feedbackLabel.setForeground(AppColors.TEXT_GREEN);
         } else {
             optBtns[idx].setBackground(new Color(0xFFCDD2));
-            optBtns[idx].setForeground(new Color(0xB71C1C));
-            feedbackLabel.setText("錯誤，正確答案：" + answer);
+            optBtns[idx].setForeground(AppColors.TEXT_PRIMARY);
+            feedbackLabel.setText("正確答案：" + answer);
             feedbackLabel.setForeground(AppColors.TEXT_RED);
-            for (JButton b : optBtns) if (b.getText().equals(answer)) { b.setBackground(new Color(0xC8E6C9)); b.setForeground(new Color(0x1B5E20)); }
+            for (JButton b : optBtns) if (b.getText().equals(answer)) { b.setBackground(new Color(0xC8E6C9)); b.setForeground(AppColors.TEXT_PRIMARY); }
         }
         nextBtn.setVisible(true);
         scoreLabel.setText("答對 " + correctCount + " · 答錯 " + (currentIndex+1 - correctCount));
@@ -305,17 +308,6 @@ public class VocabQuizPanel extends JPanel {
         } catch (Exception ex) { JOptionPane.showMessageDialog(this,"發音需要系統支援","提示",JOptionPane.WARNING_MESSAGE); }
     }
 
-    private void refreshModeBtns() {
-        Mode[] vals = {Mode.EN_TO_CN, Mode.CN_TO_EN};
-        for (int i = 0; i < modeBtns.length; i++) {
-            boolean on = vals[i] == currentMode;
-            modeBtns[i].setBackground(on ? AppColors.BTN_PRIMARY : AppColors.BG_CARD);
-            modeBtns[i].setForeground(on ? Color.WHITE : AppColors.TEXT_SECONDARY);
-            modeBtns[i].setBorder(new CompoundBorder(
-                new LineBorder(on ? AppColors.BORDER : AppColors.BORDER_SOFT, 1, true),
-                new EmptyBorder(4, 12, 4, 12)));
-        }
-    }
 
     private String modeHint(Mode mode) {
         return switch (mode) {
@@ -332,6 +324,7 @@ public class VocabQuizPanel extends JPanel {
         b.setBackground(bg); b.setForeground(fg);
         b.setBorder(new CompoundBorder(new LineBorder(AppColors.BORDER_SOFT,1,true), new EmptyBorder(5,14,5,14)));
         b.setFocusPainted(false);
+        UIUtils.addHover(b, bg);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return b;
     }
