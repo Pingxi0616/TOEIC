@@ -23,29 +23,6 @@
 
 ---
 
-## ⚠️ 首次使用前必讀：下載 vocabulary.json
-
-`vocabulary.json` 因檔案過大（2000+ 筆單字）未納入 Git 追蹤，**需手動下載**。
-
-**步驟：**
-
-1. 前往 GitHub 頁面中的 [`data/vocabulary_backup.json`](https://github.com/Pingxi0616/TOEIC/blob/main/ToeicFinal/data/vocabulary_backup.json)
-2. 點擊右上角 **「Download raw file」** 下載
-3. 將下載的檔案**改名為 `vocabulary.json`**
-4. 放入專案的 `data/` 資料夾中
-
-```
-ToeicFinal/
-└── data/
-    ├── vocabulary.json        ← 放在這裡（手動加入）
-    ├── vocabulary_backup.json ← 原始備份（勿修改）
-    └── collections.json
-```
-
-> 若缺少此檔案，程式仍可啟動，但單字清單將為空。
-
----
-
 ## 編譯與執行
 
 **Windows：**
