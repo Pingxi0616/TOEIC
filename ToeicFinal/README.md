@@ -46,7 +46,8 @@ ToeicFinal/
 ## 編譯與執行
 
 **Windows（使用提供的 .bat 腳本）：**
-```bat
+
+```
 compile_windows.bat
 run_windows.bat
 ```
@@ -54,7 +55,8 @@ run_windows.bat
 > 若雙擊 `.bat` 後視窗一閃即逝看不到錯誤訊息（常見原因：找不到 Java 或 Gson），請改用下方「手動編譯」方式，在終端機中執行可保留錯誤訊息以便除錯。
 
 **Windows（VSCode 終端機 / PowerShell 手動編譯）：**
-```powershell
+
+```
 # 1. 切到專案資料夾
 cd ToeicFinal
 
@@ -69,7 +71,8 @@ java -cp "out;lib\gson-2.10.1.jar" main.Main
 ```
 
 **macOS / Linux：**
-```bash
+
+```
 bash compile.sh
 bash run.sh
 ```
@@ -91,3 +94,57 @@ ToeicFinal/
 ├── data/             # 資料檔（vocabulary.json、collections.json，隨 repo 提供）
 └── test/             # 單元測試
 ```
+
+---
+
+## ⚠️ data/vocabulary.json 多人協作問題
+
+### 目前狀況
+
+`ToeicFinal/data/` 目前只有兩個檔案，**都隨 Git 追蹤、會一起 push 上 repo**：
+
+```
+ToeicFinal/data/
+├── collections.json
+└── vocabulary.json
+```
+
+`vocabulary.json` 同時存放了兩種性質不同的資料：
+
+| 類型 | 欄位範例 | 是否該共享 |
+|---|---|---|
+| 單字本身 | word、meaning、pos、example | 應該共享 |
+| 個人學習紀錄 | wrongCount、correctCount、familiarity、lastReviewDate、nextReviewDate | 不該共享 |
+
+因為兩者混在同一個檔案，目前只要任何人在本機**練習測驗**（不是新增單字），`vocabulary.json` 的內容就會被改動。一旦這個改動被 commit / push 上去，會出現以下狀況：
+
+- 組員 `git pull` 時，自己的學習紀錄被別人覆蓋
+- 雙方都改過時直接 merge 衝突（例如先前遇到的 `CONFLICT (modify/delete)` 或 `Unable to pull when changes are present on your branch` 錯誤）
+- 即使只是新增了幾個單字，也會連帶把自己的答題紀錄一起推給所有人
+
+### 建議解決方案：拆分檔案（尚未實作）
+
+> 以下為**建議的修改方向**，目前程式碼與 repo 中尚未實際拆分，仍是單一 `vocabulary.json`。
+
+將 `vocabulary.json` 拆成兩個檔案，各自負責不同職責：
+
+```
+ToeicFinal/data/
+├── words.json       # 單字基本資料 → 加入 Git 版本控制，供所有人共用
+├── progress.json    # 個人學習紀錄 → 加入 .gitignore，僅留在本機
+└── collections.json
+```
+
+- **`words.json`**：只存放單字本身（word / meaning / pos / phrase / example）。任何人新增單字後，正常 `git add` → `commit` → `push`，組員 `pull` 下來就能拿到新單字。
+- **`progress.json`**：只存放個人學習紀錄（wrongCount / correctCount / familiarity / lastReviewDate / nextReviewDate / favorite）。加入 `.gitignore`，每個人各自保存在本機，答題不會互相覆蓋。
+
+程式啟動時，由 `FileManager` 依照 `word` 欄位把兩份資料合併成記憶體中的 `Vocabulary` 清單；存檔時則拆分寫回兩個檔案。
+
+**需要調整的部分：**
+
+1. `FileManager` 新增 `loadWords()`、`loadProgress()`、`mergeData()`、`saveWords()`、`saveProgress()`
+2. `.gitignore` 加入一行：`data/progress.json`
+3. 新增單字流程只呼叫 `saveWords()`，可直接 commit 分享
+4. 答題流程只呼叫 `saveProgress()`，不會異動 `words.json`，因此不會產生衝突
+
+**效益：** 新增單字可正常透過 Git 共用，個人學習紀錄完全留在本機、互不干擾，不再出現 `vocabulary.json` 的 merge 衝突。
