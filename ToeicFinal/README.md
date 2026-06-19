@@ -23,6 +23,7 @@
 
 ---
 
+
 ## 編譯與執行
 
 **Windows：**
@@ -36,7 +37,15 @@ run_windows.bat
 bash compile.sh
 bash run.sh
 ```
+## ⚠️ 首次使用前必讀：安裝 Gson
 
+本專案使用 [Gson](https://github.com/google/gson) 處理單字資料的 JSON 讀寫，**未隨 Git 提供**，需手動下載。
+
+**步驟：**
+
+1. 下載 [gson-2.10.1.jar](https://repo1.maven.org/maven2/com/google/code/gson/gson/2.10.1/gson-2.10.1.jar)
+2. 在 `ToeicFinal/` 底下建立 `lib` 資料夾（若尚未存在）
+3. 將下載的 jar 放入 `lib/` 資料夾
 ---
 
 ## 專案結構
